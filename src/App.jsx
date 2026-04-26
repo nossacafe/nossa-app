@@ -339,20 +339,27 @@ export default function NossaCafe() {
   }
 
   // ── GUARDAR CIERRE ───────────────────────────────────────────────────────────
-  async function doGuardar() {
-    // Snapshot inmediato — captura el estado ANTES de cualquier setState
+  async function handleGuardarCierre() {
+    console.log("CLICK GUARDAR CIERRE");
+
+    // 1. Snapshot inmediato de todo antes de cualquier setState
     var pt        = selectedPoint;
     var hr        = hora;
     var resp      = responsable;
     var stocksNow = Object.assign({}, stocks);
     var skipNow   = Object.assign({}, skipped);
     var catsNow   = buildCats(pt);
+    var fecha     = fechaHoy();
 
+    // 2. Validar punto
     if (!pt) {
-      alert("Error: no hay punto seleccionado. Selecciona Centro, Primavera o CF.");
+      console.error("handleGuardarCierre: selectedPoint es null");
+      alert("Error: no hay punto seleccionado. Vuelve al inicio y selecciona Centro, Primavera o CF.");
       return;
     }
+    console.log("Punto validado:", pt);
 
+    // 3. Construir pedido
     var pedido = catsNow
       .filter(function (c) { return !skipNow[c.id]; })
       .flatMap(function (c) {
@@ -361,14 +368,32 @@ export default function NossaCafe() {
           .map(function (p) { return { cat: c.nombre, prod: p.nombre, cantidad: Math.max(0, p.max - (stocksNow[p.nombre] || 0)) }; });
       });
 
-    // Datos que se envian a Sheets (solo los esenciales, sin stocks completo)
+    // 4. Construir URL
     var datos = { hora: hr, responsable: resp || "", pedido: pedido };
+    var finalUrl = DEFAULT_APPS_SCRIPT_URL
+      + "?action=guardarCierre"
+      + "&fecha="  + encodeURIComponent(fecha)
+      + "&punto="  + encodeURIComponent(pt)
+      + "&datos="  + encodeURIComponent(JSON.stringify(datos));
+
+    console.log("URL FINAL GUARDAR:", finalUrl);
+    console.log("URL length:", finalUrl.length);
 
     setSaving(true);
     try {
-      var estadoPost = await apiGuardarCierre(pt, datos);
+      // 5. Disparar GET sin CORS via Image()
+      await dispararGetSinCors(finalUrl);
+      console.log("dispararGetSinCors completado");
 
-      // Construir mensaje WhatsApp desde snapshot — NUNCA usa estado mutable
+      // 6. Esperar 1500ms para que Sheets procese
+      await new Promise(function (r) { setTimeout(r, 1500); });
+
+      // 7. Recargar estado desde Sheets
+      var estadoNuevo = await apiEstadoCierres();
+      console.log("Estado tras guardar:", estadoNuevo);
+      setCierresEstado(estadoNuevo);
+
+      // 8. Construir mensaje WhatsApp desde snapshot
       var fechaDisplay = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
       var msg = "CIERRE - " + pt + "\n" + fechaDisplay + "  " + hr + "  " + (resp || "--") + "\n\n";
       if (!pedido.length) {
@@ -384,19 +409,13 @@ export default function NossaCafe() {
         });
       }
 
-      // Guardar snapshot del cierre — el resumen LEE SOLO DE AQUI
+      // 9. Guardar snapshot inmutable para resumen
       setLastSaved({ punto: pt, hora: hr, responsable: resp, pedido: pedido, mensaje: msg });
 
-      // Actualizar estado desde Sheets
-      if (estadoPost && typeof estadoPost === "object") {
-        setCierresEstado(estadoPost);
-      } else {
-        await recargar();
-      }
-
+      // 10. Ir a resumen
       setScreen("resumen");
     } catch (e) {
-      console.error("doGuardar error:", e);
+      console.error("handleGuardarCierre error:", e);
       alert("Error al guardar:\n" + e.message);
     }
     setSaving(false);
@@ -614,7 +633,7 @@ export default function NossaCafe() {
               <span style={{ color: cat.color, fontSize: 13 }}>Revisaste esta categoria hoy?</span>
               <button style={{ fontSize: 12, padding: "7px 12px", borderRadius: 20, border: "1.5px solid " + cat.color, background: "transparent", cursor: "pointer", color: cat.color }} onClick={function () {
                 var ns = Object.assign({}, skipped); ns[cat.id] = true; setSkipped(ns);
-                if (catIdx < categorias.length - 1) setCatIdx(catIdx + 1); else doGuardar();
+                if (catIdx < categorias.length - 1) setCatIdx(catIdx + 1); else handleGuardarCierre();
               }}>Omitir</button>
             </div>
           )}
@@ -644,7 +663,7 @@ export default function NossaCafe() {
               disabled={!done || saving}
               onClick={function () {
                 if (catIdx < categorias.length - 1) setCatIdx(catIdx + 1);
-                else doGuardar();
+                else handleGuardarCierre();
               }}
             >
               {saving ? "Guardando..." : catIdx < categorias.length - 1 ? "Siguiente: " + (categorias[catIdx + 1] ? categorias[catIdx + 1].nombre : "") : "Guardar cierre"}
