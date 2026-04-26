@@ -368,16 +368,23 @@ export default function NossaCafe() {
           .map(function (p) { return { cat: c.nombre, prod: p.nombre, cantidad: Math.max(0, p.max - (stocksNow[p.nombre] || 0)) }; });
       });
 
-    // 4. Construir URL
-    var datos = { hora: hr, responsable: resp || "", pedido: pedido };
+    // 4. Construir URL — DATOS MÍNIMOS
+    //    La hoja CIERRES solo necesita el marcador (punto cerrado o no).
+    //    NO enviamos pedido, stocks, productos ni skipped: eso vive solo en cliente
+    //    para el mensaje de WhatsApp y la pantalla de resumen.
+    //    Objetivo: URL corta (<600 chars) para que Apps Script la reciba completa.
+    var datosMinimos = { hora: hr, responsable: resp || "", resumen: true };
     var finalUrl = DEFAULT_APPS_SCRIPT_URL
       + "?action=guardarCierre"
       + "&fecha="  + encodeURIComponent(fecha)
       + "&punto="  + encodeURIComponent(pt)
-      + "&datos="  + encodeURIComponent(JSON.stringify(datos));
+      + "&datos="  + encodeURIComponent(JSON.stringify(datosMinimos));
 
     console.log("URL FINAL GUARDAR:", finalUrl);
     console.log("URL length:", finalUrl.length);
+    if (finalUrl.length > 600) {
+      console.warn("URL inesperadamente larga:", finalUrl.length);
+    }
 
     setSaving(true);
     try {
@@ -391,7 +398,22 @@ export default function NossaCafe() {
       // 7. Recargar estado desde Sheets
       var estadoNuevo = await apiEstadoCierres();
       console.log("Estado tras guardar:", estadoNuevo);
+
+      // 7b. Si el punto no salió true, reintento UNA vez tras 1500ms más
+      if (!estadoNuevo[pt]) {
+        console.warn("Punto " + pt + " aún no marcado como true. Reintentando estadoCierres...");
+        await new Promise(function (r) { setTimeout(r, 1500); });
+        estadoNuevo = await apiEstadoCierres();
+        console.log("Estado tras reintento:", estadoNuevo);
+      }
+
       setCierresEstado(estadoNuevo);
+
+      if (estadoNuevo[pt]) {
+        console.log("✓ Cierre confirmado en Sheets para " + pt);
+      } else {
+        console.warn("⚠ Cierre NO confirmado en Sheets para " + pt + ". Pasando a resumen igual.");
+      }
 
       // 8. Construir mensaje WhatsApp desde snapshot
       var fechaDisplay = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
