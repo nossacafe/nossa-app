@@ -6,123 +6,106 @@ const DEFAULT_APPS_SCRIPT_URL =
 const ADMIN_PASSWORD = "nossa2024";
 const PUNTOS = ["Centro", "Primavera", "CF"];
 
-const CATS = [
-  {
-    id: "pasteleria", nombre: "Pasteleria", icon: "🥐",
-    color: "#7C5C3B", bg: "#FFF8F0", obligatoria: true, soloEn: null,
-    productos: [
-      { nombre: "Pastel pollo", min: 12, max: 18 },
-      { nombre: "Almojavanas", min: 2, max: 5 },
-      { nombre: "Galleta avena", min: 3, max: 6 },
-      { nombre: "Galleta macadamia", min: 3, max: 6 },
-      { nombre: "Galleta chocolate", min: 2, max: 4 },
-      { nombre: "Empanada carne", min: 6, max: 18 },
-      { nombre: "Empanada pollo", min: 6, max: 18 },
-      { nombre: "Croissant mantequilla", min: 2, max: 6 },
-      { nombre: "Croissant almendra", min: 2, max: 6 },
-      { nombre: "Eclair maracuya", min: 5, max: 10 },
-      { nombre: "Torta zanahoria", min: 6, max: 10 },
-      { nombre: "Torta chocolate", min: 6, max: 10 },
-      { nombre: "Torta naranja", min: 2, max: 6 },
-      { nombre: "Torta almojavana", min: 2, max: 6 },
-      { nombre: "Tarta cafe", min: 4, max: 8 },
-      { nombre: "Tarta arandanos", min: 6, max: 12 },
-      { nombre: "Cheesecake lulo", min: 3, max: 7 },
-      { nombre: "Cheesecake guayaba", min: 2, max: 5 },
-      { nombre: "Mangos", min: 4, max: 8 },
-      { nombre: "Tres leches", min: 3, max: 6 },
-      { nombre: "Milhojas arequipe", min: 5, max: 8 },
-      { nombre: "Milhojas limon", min: 5, max: 8 },
-      { nombre: "Cocos", min: 3, max: 6 },
-      { nombre: "Fresas und", min: 3, max: 8 },
-      { nombre: "Osos", min: 8, max: 12 },
-    ],
-  },
-  {
-    id: "cafeteria", nombre: "Cafeteria", icon: "C",
-    color: "#6B4226", bg: "#FDF6F0", obligatoria: false, soloEn: null,
-    productos: [
-      { nombre: "Crema whisky", min: 1, max: 1 },
-      { nombre: "Hierbabuena", min: 1, max: 1 },
-      { nombre: "Tarro aro fresa", min: 1, max: 1 },
-      { nombre: "Tarro aro papaya", min: 1, max: 1 },
-      { nombre: "Tarro aro mora", min: 1, max: 1 },
-      { nombre: "Leche almendra cajax6", min: 2, max: 6 },
-      { nombre: "Varietales", min: 2, max: 6 },
-    ],
-  },
-  {
-    id: "limpieza", nombre: "Limpieza", icon: "L",
-    color: "#2E7D6B", bg: "#F0FAF7", obligatoria: false, soloEn: null,
-    productos: [
-      { nombre: "Toallas manos paq", min: 2, max: 6 },
-      { nombre: "Jabon loza", min: 1, max: 2 },
-      { nombre: "Jabon lavavajillas", min: 1, max: 2 },
-      { nombre: "Jabon de manos", min: 2, max: 6 },
-      { nombre: "Esponjas", min: 1, max: 3 },
-      { nombre: "Alcohol", min: 1, max: 1 },
-      { nombre: "Cloro", min: 2, max: 6 },
-      { nombre: "Limpiones", min: 2, max: 6 },
-    ],
-  },
-  {
-    id: "empaques", nombre: "Empaques", icon: "E",
-    color: "#5C4DB1", bg: "#F5F3FF", obligatoria: false, soloEn: null,
-    productos: [
-      { nombre: "Bolsa manija grande", min: 15, max: 30 },
-      { nombre: "Bolsa manija mediana", min: 15, max: 30 },
-      { nombre: "Bolsa parafinada grande", min: 2, max: 4 },
-      { nombre: "Bolsa parafinada pequena", min: 2, max: 4 },
-      { nombre: "Servilletas", min: 1, max: 2 },
-    ],
-  },
-  {
-    id: "materias", nombre: "Materias Primas", icon: "M",
-    color: "#3A7D44", bg: "#F1FAF2", obligatoria: false, soloEn: null,
-    productos: [
-      { nombre: "Te matcha", min: 1, max: 1 },
-      { nombre: "Beach party te", min: 2, max: 6 },
-      { nombre: "Chocolate mezcla", min: 1, max: 1 },
-      { nombre: "Amaretto", min: 1, max: 2 },
-      { nombre: "Pulpa de mango", min: 3, max: 6 },
-      { nombre: "Guanabana pulpa", min: 2, max: 6 },
-      { nombre: "Mora pulpa", min: 2, max: 6 },
-      { nombre: "Fresa pulpa", min: 2, max: 6 },
-      { nombre: "Huevos und", min: 2, max: 4 },
-      { nombre: "Limones und", min: 3, max: 5 },
-      { nombre: "Avena en polvo", min: 1, max: 1 },
-    ],
-  },
-  {
-    id: "cf_extra", nombre: "Exclusivo CF", icon: "*",
-    color: "#C2185B", bg: "#FFF0F5", obligatoria: false, soloEn: "CF",
-    productos: [
-      { nombre: "Muffin arandano frambuesa", min: 2, max: 6 },
-      { nombre: "Gansito", min: 2, max: 6 },
-    ],
-  },
-];
+// ─── CATEGORIAS — METADATA VISUAL ─────────────────────────────────────────────
+// Las categorias son fijas (ID + visual metadata). Los PRODUCTOS son dinamicos
+// y se cargan desde la hoja PRODUCTOS via Apps Script (fuente de verdad).
+const CATS_META = {
+  pasteleria: { nombre: "Pasteleria",      icon: "🥐", color: "#7C5C3B", bg: "#FFF8F0", obligatoria: true,  soloEn: null },
+  cafeteria:  { nombre: "Cafeteria",       icon: "C",  color: "#6B4226", bg: "#FDF6F0", obligatoria: false, soloEn: null },
+  limpieza:   { nombre: "Limpieza",        icon: "L",  color: "#2E7D6B", bg: "#F0FAF7", obligatoria: false, soloEn: null },
+  empaques:   { nombre: "Empaques",        icon: "E",  color: "#5C4DB1", bg: "#F5F3FF", obligatoria: false, soloEn: null },
+  materias:   { nombre: "Materias Primas", icon: "M",  color: "#3A7D44", bg: "#F1FAF2", obligatoria: false, soloEn: null },
+  cf_extra:   { nombre: "Exclusivo CF",    icon: "*",  color: "#C2185B", bg: "#FFF0F5", obligatoria: false, soloEn: "CF" },
+};
+const CATS_ORDER = ["pasteleria", "cafeteria", "limpieza", "empaques", "materias", "cf_extra"];
 
-// ─── LOOKUPS DERIVADOS ────────────────────────────────────────────────────────
 // Categorias que son PRODUCCION para Obrador (lo que hornea, no compra)
 const CATS_PRODUCCION = ["pasteleria", "cf_extra"];
 
-// Map nombre de producto -> id de categoria. Permite reconstruir la categoria
-// en cliente sin enviarla en cada item del pedido (URL mas corta).
-const PRODUCTO_A_CAT = (function () {
+// Map id de categoria -> nombre legible
+const CAT_NOMBRE = (function () {
   var m = {};
-  CATS.forEach(function (c) {
-    c.productos.forEach(function (p) { m[p.nombre] = c.id; });
-  });
+  CATS_ORDER.forEach(function (id) { if (CATS_META[id]) m[id] = CATS_META[id].nombre; });
   return m;
 })();
 
-// Map id de categoria -> nombre legible (para mostrar agrupado en Obrador)
-const CAT_NOMBRE = (function () {
+// ─── PRODUCTOS — FALLBACK LOCAL ───────────────────────────────────────────────
+// Solo se usa si Apps Script no responde y no hay cache en localStorage.
+// La fuente de verdad es la hoja PRODUCTOS (cargada en boot).
+const PRODUCTOS_FALLBACK = [
+  // Pasteleria
+  { categoria: "pasteleria", producto: "Pastel pollo", min: 12, max: 18, activo: true },
+  { categoria: "pasteleria", producto: "Almojavanas", min: 2, max: 5, activo: true },
+  { categoria: "pasteleria", producto: "Galleta avena", min: 3, max: 6, activo: true },
+  { categoria: "pasteleria", producto: "Galleta macadamia", min: 3, max: 6, activo: true },
+  { categoria: "pasteleria", producto: "Galleta chocolate", min: 2, max: 4, activo: true },
+  { categoria: "pasteleria", producto: "Empanada carne", min: 6, max: 18, activo: true },
+  { categoria: "pasteleria", producto: "Empanada pollo", min: 6, max: 18, activo: true },
+  { categoria: "pasteleria", producto: "Croissant mantequilla", min: 2, max: 6, activo: true },
+  { categoria: "pasteleria", producto: "Croissant almendra", min: 2, max: 6, activo: true },
+  { categoria: "pasteleria", producto: "Eclair maracuya", min: 5, max: 10, activo: true },
+  { categoria: "pasteleria", producto: "Torta zanahoria", min: 6, max: 10, activo: true },
+  { categoria: "pasteleria", producto: "Torta chocolate", min: 6, max: 10, activo: true },
+  { categoria: "pasteleria", producto: "Torta naranja", min: 2, max: 6, activo: true },
+  { categoria: "pasteleria", producto: "Torta almojavana", min: 2, max: 6, activo: true },
+  { categoria: "pasteleria", producto: "Tarta cafe", min: 4, max: 8, activo: true },
+  { categoria: "pasteleria", producto: "Tarta arandanos", min: 6, max: 12, activo: true },
+  { categoria: "pasteleria", producto: "Cheesecake lulo", min: 3, max: 7, activo: true },
+  { categoria: "pasteleria", producto: "Cheesecake guayaba", min: 2, max: 5, activo: true },
+  { categoria: "pasteleria", producto: "Mangos", min: 4, max: 8, activo: true },
+  { categoria: "pasteleria", producto: "Tres leches", min: 3, max: 6, activo: true },
+  { categoria: "pasteleria", producto: "Milhojas arequipe", min: 5, max: 8, activo: true },
+  { categoria: "pasteleria", producto: "Milhojas limon", min: 5, max: 8, activo: true },
+  { categoria: "pasteleria", producto: "Cocos", min: 3, max: 6, activo: true },
+  { categoria: "pasteleria", producto: "Fresas und", min: 3, max: 8, activo: true },
+  { categoria: "pasteleria", producto: "Osos", min: 8, max: 12, activo: true },
+  // Cafeteria
+  { categoria: "cafeteria", producto: "Crema whisky", min: 1, max: 1, activo: true },
+  { categoria: "cafeteria", producto: "Hierbabuena", min: 1, max: 1, activo: true },
+  { categoria: "cafeteria", producto: "Tarro aro fresa", min: 1, max: 1, activo: true },
+  { categoria: "cafeteria", producto: "Tarro aro papaya", min: 1, max: 1, activo: true },
+  { categoria: "cafeteria", producto: "Tarro aro mora", min: 1, max: 1, activo: true },
+  { categoria: "cafeteria", producto: "Leche almendra cajax6", min: 2, max: 6, activo: true },
+  { categoria: "cafeteria", producto: "Varietales", min: 2, max: 6, activo: true },
+  // Limpieza
+  { categoria: "limpieza", producto: "Toallas manos paq", min: 2, max: 6, activo: true },
+  { categoria: "limpieza", producto: "Jabon loza", min: 1, max: 2, activo: true },
+  { categoria: "limpieza", producto: "Jabon lavavajillas", min: 1, max: 2, activo: true },
+  { categoria: "limpieza", producto: "Jabon de manos", min: 2, max: 6, activo: true },
+  { categoria: "limpieza", producto: "Esponjas", min: 1, max: 3, activo: true },
+  { categoria: "limpieza", producto: "Alcohol", min: 1, max: 1, activo: true },
+  { categoria: "limpieza", producto: "Cloro", min: 2, max: 6, activo: true },
+  { categoria: "limpieza", producto: "Limpiones", min: 2, max: 6, activo: true },
+  // Empaques
+  { categoria: "empaques", producto: "Bolsa manija grande", min: 15, max: 30, activo: true },
+  { categoria: "empaques", producto: "Bolsa manija mediana", min: 15, max: 30, activo: true },
+  { categoria: "empaques", producto: "Bolsa parafinada grande", min: 2, max: 4, activo: true },
+  { categoria: "empaques", producto: "Bolsa parafinada pequena", min: 2, max: 4, activo: true },
+  { categoria: "empaques", producto: "Servilletas", min: 1, max: 2, activo: true },
+  // Materias
+  { categoria: "materias", producto: "Te matcha", min: 1, max: 1, activo: true },
+  { categoria: "materias", producto: "Beach party te", min: 2, max: 6, activo: true },
+  { categoria: "materias", producto: "Chocolate mezcla", min: 1, max: 1, activo: true },
+  { categoria: "materias", producto: "Amaretto", min: 1, max: 2, activo: true },
+  { categoria: "materias", producto: "Pulpa de mango", min: 3, max: 6, activo: true },
+  { categoria: "materias", producto: "Guanabana pulpa", min: 2, max: 6, activo: true },
+  { categoria: "materias", producto: "Mora pulpa", min: 2, max: 6, activo: true },
+  { categoria: "materias", producto: "Fresa pulpa", min: 2, max: 6, activo: true },
+  { categoria: "materias", producto: "Huevos und", min: 2, max: 4, activo: true },
+  { categoria: "materias", producto: "Limones und", min: 3, max: 5, activo: true },
+  { categoria: "materias", producto: "Avena en polvo", min: 1, max: 1, activo: true },
+  // CF extra
+  { categoria: "cf_extra", producto: "Muffin arandano frambuesa", min: 2, max: 6, activo: true },
+  { categoria: "cf_extra", producto: "Gansito", min: 2, max: 6, activo: true },
+];
+
+// Construye un map nombre -> categoria a partir de un array de productos.
+// Incluye productos inactivos (para que cierres historicos sigan categorizables en Obrador).
+function buildProductoACat(productosArr) {
   var m = {};
-  CATS.forEach(function (c) { m[c.id] = c.nombre; });
+  productosArr.forEach(function (p) { m[p.producto] = p.categoria; });
   return m;
-})();
+}
 
 // ─── UTILS ────────────────────────────────────────────────────────────────────
 function fechaHoy() {
@@ -149,6 +132,49 @@ function fechaAyer() {
 function fechaDisplay(yyyymmdd) {
   if (!yyyymmdd || typeof yyyymmdd !== "string" || yyyymmdd.length < 10) return yyyymmdd || "";
   return yyyymmdd.slice(8, 10) + "/" + yyyymmdd.slice(5, 7) + "/" + yyyymmdd.slice(0, 4);
+}
+
+// Normaliza el "datos" de un cierre (sea cual sea su formato historico)
+// a un array de { nombre, cantidad }.
+// Soporta:
+//   - { p:  [["nombre", n], ...] }              (formato actual compacto)
+//   - { pedido:    [{prod,cantidad}, ...] }     (formato local previo)
+//   - { pedidos:   [...] }                      (alias)
+//   - { produccion:[...] }                      (alias futuro)
+// Suma duplicados. Filtra cantidades <= 0.
+function normalizarItemsCierre(datos) {
+  if (!datos || typeof datos !== "object") return [];
+
+  function parseEntry(it) {
+    if (Array.isArray(it)) {
+      var nombre = it[0];
+      var cant   = it[1];
+      if (nombre) return { nombre: String(nombre), cantidad: Number(cant) || 0 };
+      return null;
+    }
+    if (it && typeof it === "object") {
+      var n = it.nombre || it.prod || it.producto || it.name || "";
+      var c = it.cantidad != null ? it.cantidad : (it.cant != null ? it.cant : (it.qty != null ? it.qty : 0));
+      if (n) return { nombre: String(n), cantidad: Number(c) || 0 };
+    }
+    return null;
+  }
+
+  var bag = {};
+  ["p", "pedido", "pedidos", "produccion"].forEach(function (key) {
+    var arr = datos[key];
+    if (!Array.isArray(arr)) return;
+    arr.forEach(function (it) {
+      var parsed = parseEntry(it);
+      if (parsed && parsed.cantidad > 0) {
+        bag[parsed.nombre] = (bag[parsed.nombre] || 0) + parsed.cantidad;
+      }
+    });
+  });
+
+  return Object.keys(bag).map(function (nombre) {
+    return { nombre: nombre, cantidad: bag[nombre] };
+  });
 }
 
 function lsGet(k) {
@@ -218,6 +244,70 @@ async function apiUltimoCierre(punto) {
     console.error("apiUltimoCierre:", e);
   }
   return { success: false, found: false, punto: punto, datos: null };
+}
+
+// ─── API PRODUCTOS ─────────────────────────────────────────────────────────────
+async function apiListarProductos() {
+  var url = DEFAULT_APPS_SCRIPT_URL + "?action=listarProductos";
+  try {
+    var res  = await fetch(url);
+    var text = await res.text();
+    var data = JSON.parse(text);
+    if (data && data.success && Array.isArray(data.productos)) return data.productos;
+    console.warn("apiListarProductos respuesta sin success:", data);
+  } catch (e) {
+    console.error("apiListarProductos:", e);
+  }
+  return null;  // null = falla; el caller decide si usar cache/fallback
+}
+
+async function apiGuardarProducto(categoria, producto, min, max) {
+  var url = DEFAULT_APPS_SCRIPT_URL
+    + "?action=guardarProducto"
+    + "&categoria=" + encodeURIComponent(categoria)
+    + "&producto="  + encodeURIComponent(producto)
+    + "&min=" + encodeURIComponent(String(min))
+    + "&max=" + encodeURIComponent(String(max));
+  try {
+    var res  = await fetch(url);
+    var text = await res.text();
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("apiGuardarProducto:", e);
+    return { success: false, error: String(e) };
+  }
+}
+
+async function apiActualizarProducto(producto, cambios) {
+  // cambios: { min?, max?, activo? }
+  var url = DEFAULT_APPS_SCRIPT_URL
+    + "?action=actualizarProducto"
+    + "&producto=" + encodeURIComponent(producto);
+  if (cambios.min    != null) url += "&min="    + encodeURIComponent(String(cambios.min));
+  if (cambios.max    != null) url += "&max="    + encodeURIComponent(String(cambios.max));
+  if (cambios.activo != null) url += "&activo=" + encodeURIComponent(String(cambios.activo));
+  try {
+    var res  = await fetch(url);
+    var text = await res.text();
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("apiActualizarProducto:", e);
+    return { success: false, error: String(e) };
+  }
+}
+
+async function apiEliminarProducto(producto) {
+  var url = DEFAULT_APPS_SCRIPT_URL
+    + "?action=eliminarProducto"
+    + "&producto=" + encodeURIComponent(producto);
+  try {
+    var res  = await fetch(url);
+    var text = await res.text();
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("apiEliminarProducto:", e);
+    return { success: false, error: String(e) };
+  }
 }
 
 async function apiGuardarCierre(punto, datos) {
@@ -336,7 +426,6 @@ export default function NossaCafe() {
   var [catIdx, setCatIdx]               = useState(0);
   var [skipped, setSkipped]             = useState({});
   var [stocks, setStocks]               = useState({});
-  var [minMax, setMinMax]               = useState({});
   var [cierresEstado, setCierresEstado] = useState({ Centro: false, Primavera: false, CF: false });
   var [cargando, setCargando]           = useState(false);
   var [saving, setSaving]               = useState(false);
@@ -344,9 +433,30 @@ export default function NossaCafe() {
   var [adminPass, setAdminPass]         = useState("");
   var [adminErr, setAdminErr]           = useState(false);
   var [adminTab, setAdminTab]           = useState("cierres");
-  var [editMM, setEditMM]               = useState(null);
+
+  // ── Productos: fuente de verdad es la hoja PRODUCTOS de Sheets.
+  //    En boot intentamos cache de localStorage (rapido), luego sobreescribimos con Sheets.
+  //    Si Sheets falla y no hay cache, usamos PRODUCTOS_FALLBACK.
+  var [productos, setProductos]         = useState(function () {
+    var cache = lsGet("nossa_productos_v1");
+    if (cache && Array.isArray(cache) && cache.length > 0) return cache;
+    return PRODUCTOS_FALLBACK;
+  });
+  var [productosLoading, setProductosLoading] = useState(false);
+
+  // ── Estado de edicion en el panel Admin Min/Max
+  var [editProd, setEditProd]           = useState(null);   // nombre del producto en edicion (null = ninguno)
   var [eMin, setEMin]                   = useState("");
   var [eMax, setEMax]                   = useState("");
+  var [savingProd, setSavingProd]       = useState(false);
+
+  // ── Estado del formulario "Anadir producto"
+  var [adding, setAdding]               = useState(false);
+  var [aCat,  setACat]                  = useState("pasteleria");
+  var [aName, setAName]                 = useState("");
+  var [aMin,  setAMin]                  = useState("");
+  var [aMax,  setAMax]                  = useState("");
+
   var [despacho, setDespacho]           = useState(function () { return lsGet("nossa_despacho_v2") || {}; });
 
   // ── Obrador (separado del flujo de tienda) ─────────────────────────────────
@@ -360,8 +470,8 @@ export default function NossaCafe() {
   // ── Boot ────────────────────────────────────────────────────────────────────
   useEffect(function () {
     setHora(horaActual());
-    setMinMax(lsGet("nossa_minmax") || {});
     recargar();
+    cargarProductos();   // carga productos desde Sheets en background
   }, []);
 
   useEffect(function () {
@@ -378,6 +488,23 @@ export default function NossaCafe() {
       setCierresEstado(e);
     } catch (err) { console.error(err); }
     setCargando(false);
+  }
+
+  // ── Productos: carga desde Sheets, actualiza cache ─────────────────────────
+  async function cargarProductos() {
+    setProductosLoading(true);
+    try {
+      var arr = await apiListarProductos();
+      if (arr && arr.length > 0) {
+        setProductos(arr);
+        lsSet("nossa_productos_v1", arr);
+      } else {
+        console.warn("listarProductos vacio o null. Manteniendo cache/fallback.");
+      }
+    } catch (e) {
+      console.error("cargarProductos:", e);
+    }
+    setProductosLoading(false);
   }
 
   // ── Obrador: cargar todos los puntos para una fecha ────────────────────────
@@ -445,22 +572,37 @@ export default function NossaCafe() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screen, fechaObrador]);
 
-  // ── Min/Max ─────────────────────────────────────────────────────────────────
-  function getMM(n, d) { return (minMax && minMax[n]) ? minMax[n] : { min: d.min, max: d.max }; }
-  function saveMinMax(u) { lsSet("nossa_minmax", u); setMinMax(u); }
+  // Recargar productos al entrar al panel admin (fuente de verdad fresca)
+  useEffect(function () {
+    if (screen !== "admin") return;
+    cargarProductos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [screen]);
+
+  // ── Productos derivados (memoizados) ───────────────────────────────────────
+  // Productos activos solamente, agrupados por categoria, en el orden de CATS_ORDER
+  var productosActivos = productos.filter(function (p) { return p.activo; });
+  var productoACat     = buildProductoACat(productos);  // incluye inactivos para historico
 
   // ── Categorías ──────────────────────────────────────────────────────────────
+  // Construye las categorias dinamicamente a partir de los productos cargados.
+  // Solo incluye productos activos. Filtra categorias vacias y categorias soloEn.
   function buildCats(pt) {
-    return CATS
-      .filter(function (c) { return !c.soloEn || c.soloEn === pt; })
-      .map(function (c) {
-        return Object.assign({}, c, {
-          productos: c.productos.map(function (p) {
-            var mm = getMM(p.nombre, p);
-            return { nombre: p.nombre, min: mm.min, max: mm.max };
-          }),
-        });
-      });
+    // Agrupar productos activos por categoria
+    var grouped = {};
+    productosActivos.forEach(function (p) {
+      if (!grouped[p.categoria]) grouped[p.categoria] = [];
+      grouped[p.categoria].push({ nombre: p.producto, min: Number(p.min) || 0, max: Number(p.max) || 0 });
+    });
+
+    return CATS_ORDER
+      .filter(function (id) { return CATS_META[id]; })
+      .filter(function (id) { var meta = CATS_META[id]; return !meta.soloEn || meta.soloEn === pt; })
+      .map(function (id) {
+        var meta = CATS_META[id];
+        return Object.assign({ id: id }, meta, { productos: grouped[id] || [] });
+      })
+      .filter(function (c) { return c.productos.length > 0; });  // ocultar categorias sin productos activos
   }
 
   var categorias = buildCats(selectedPoint);
@@ -513,7 +655,7 @@ export default function NossaCafe() {
     //    - p: pedido         (array de pares [nombre, cantidad] — items con stock <= min)
     //    - o: observaciones  (vacio en iter1; UI vendra en iter2)
     //
-    //    La categoria NO se envia: se reconstruye en cliente con PRODUCTO_A_CAT.
+    //    La categoria NO se envia: se reconstruye en cliente con productoACat (derivado de productos).
     //    NO se envian stocks completos ni productos con stock OK.
     //    Esto deja la URL en orden de magnitud ~1000 chars con 20 items pendientes.
     var pedidoCompacto = [];
@@ -623,57 +765,112 @@ export default function NossaCafe() {
   }
 
   // ════════════════════════════════════════════════════════
-  // PANTALLA: OBRADOR — lee cierres reales desde Sheets por fecha
+  // PANTALLA: OBRADOR — consolidado general + despacho por punto
   // ════════════════════════════════════════════════════════
   if (screen === "obrador") {
     var enviadosCount = PUNTOS.filter(function (p) { return despachoMarcado(fechaObrador, p); }).length;
 
-    function renderTarjetaPunto(p) {
+    // Cuales puntos contribuyen al consolidado: solo los que tienen datos REALES
+    // para fechaObrador. Los que muestran "ultimo cierre" (esUltimo=true) NO entran.
+    var puntosEnConsolidado = PUNTOS.filter(function (p) {
+      var d = obradorData[p];
+      return d && d.found && !d.esUltimo;
+    });
+    var puntosPendientes = PUNTOS.filter(function (p) { return puntosEnConsolidado.indexOf(p) < 0; });
+
+    // ─── Construir consolidado general ────────────────────────────────────────
+    // map: nombreProducto -> { nombre, cat, total, porPunto, esProduccion }
+    var consolidadoMap = {};
+    puntosEnConsolidado.forEach(function (p) {
+      var d = obradorData[p];
+      var items = normalizarItemsCierre(d.datos);  // [{nombre, cantidad}]
+      items.forEach(function (it) {
+        if (!consolidadoMap[it.nombre]) {
+          var catId = productoACat[it.nombre] || "otros";
+          consolidadoMap[it.nombre] = {
+            nombre:       it.nombre,
+            cat:          catId,
+            total:        0,
+            porPunto:     { Centro: 0, Primavera: 0, CF: 0 },
+            esProduccion: CATS_PRODUCCION.indexOf(catId) >= 0,
+          };
+        }
+        consolidadoMap[it.nombre].porPunto[p] += it.cantidad;
+        consolidadoMap[it.nombre].total       += it.cantidad;
+      });
+    });
+    var consolidadoAll = Object.keys(consolidadoMap).map(function (k) { return consolidadoMap[k]; });
+    var produccionCons = consolidadoAll.filter(function (x) { return  x.esProduccion; }).sort(function (a, b) { return b.total - a.total; });
+    var pedidosCons    = consolidadoAll.filter(function (x) { return !x.esProduccion; });
+    // Agrupar pedidos consolidados por categoria
+    var pedidosConsPorCat = {};
+    pedidosCons.forEach(function (it) {
+      if (!pedidosConsPorCat[it.cat]) pedidosConsPorCat[it.cat] = [];
+      pedidosConsPorCat[it.cat].push(it);
+    });
+    Object.keys(pedidosConsPorCat).forEach(function (c) {
+      pedidosConsPorCat[c].sort(function (a, b) { return b.total - a.total; });
+    });
+
+    // Helper: render una linea de item consolidado con desglose por punto
+    function renderItemConsolidado(it, key, color) {
+      var partes = [];
+      if (it.porPunto.Centro    > 0) partes.push("Centro "    + it.porPunto.Centro);
+      if (it.porPunto.Primavera > 0) partes.push("Primavera " + it.porPunto.Primavera);
+      if (it.porPunto.CF        > 0) partes.push("CF "        + it.porPunto.CF);
+      return (
+        <div key={key} style={{ padding: "6px 0", borderBottom: "1px solid #F5F5F5" }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 13, fontWeight: "600", color: "#2D3748" }}>{it.nombre}</span>
+            <span style={{ fontSize: 13, fontWeight: "bold", color: color }}>{it.total} und</span>
+          </div>
+          {partes.length > 0 && (
+            <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 2 }}>{partes.join(" + ")}</div>
+          )}
+        </div>
+      );
+    }
+
+    // ─── Tarjeta de DESPACHO POR PUNTO ────────────────────────────────────────
+    function renderDespachoPunto(p) {
       var d        = obradorData[p];
       var sent     = despachoMarcado(fechaObrador, p);
       var datos    = d && d.found ? d.datos : null;
 
-      // Caso 1: aun cargando o sin datos para esta fecha
       if (!d || !d.found || !datos) {
         return (
           <div key={p} style={{ borderRadius: 12, border: "2px dashed #E2E8F0", background: "#FAFAFA", padding: "14px", marginBottom: 10 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <div style={{ fontSize: 15, fontWeight: "bold", color: "#2D3748" }}>{p}</div>
-              <span style={{ fontSize: 11, fontWeight: "bold", color: "#92400E", background: "#FEF3C7", padding: "3px 10px", borderRadius: 20 }}>Sin datos</span>
+              <span style={{ fontSize: 11, fontWeight: "bold", color: "#92400E", background: "#FEF3C7", padding: "3px 10px", borderRadius: 20 }}>Pendiente / Sin cierre</span>
             </div>
             <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 10 }}>No hay cierre registrado para {fechaDisplay(fechaObrador)}.</div>
             <button
               onClick={function () { cargarUltimoPunto(p); }}
               style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px solid #7C5C3B", background: "#fff", color: "#7C5C3B", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}
-            >
-              Ver ultimo cierre disponible
-            </button>
+            >Ver ultimo cierre disponible</button>
           </div>
         );
       }
 
-      // Caso 2: tiene datos. Separar items en produccion vs pedidos.
-      var items = Array.isArray(datos.p) ? datos.p : [];
-      var produccion = items.filter(function (it) { return CATS_PRODUCCION.indexOf(PRODUCTO_A_CAT[it[0]]) >= 0; });
-      var pedidos    = items.filter(function (it) { return CATS_PRODUCCION.indexOf(PRODUCTO_A_CAT[it[0]]) <  0; });
-
-      // Agrupar pedidos por categoria para mostrar bonito
+      var itemsNorm  = normalizarItemsCierre(datos);
+      var produccion = itemsNorm.filter(function (it) { return CATS_PRODUCCION.indexOf(productoACat[it.nombre]) >= 0; });
+      var pedidos    = itemsNorm.filter(function (it) { return CATS_PRODUCCION.indexOf(productoACat[it.nombre]) <  0; });
       var pedidosPorCat = {};
       pedidos.forEach(function (it) {
-        var cat = PRODUCTO_A_CAT[it[0]] || "otros";
+        var cat = productoACat[it.nombre] || "otros";
         if (!pedidosPorCat[cat]) pedidosPorCat[cat] = [];
         pedidosPorCat[cat].push(it);
       });
 
-      var hora = datos.h || "—";
-      var resp = datos.r || "—";
-      var obs  = datos.o || "";
-      var fechaCierreReal = d.fecha;
+      var hora = datos.h || datos.hora || "—";
+      var resp = datos.r || datos.responsable || "—";
+      var obs  = datos.o || datos.obs || "";
+      var fechaCierreReal  = d.fecha;
       var muestraOtraFecha = d.esUltimo && fechaCierreReal && fechaCierreReal !== fechaObrador;
 
       return (
-        <div key={p} style={{ borderRadius: 12, border: "2px solid " + (sent ? "#38A169" : "#E2E8F0"), background: "#fff", marginBottom: 10, opacity: sent ? 0.92 : 1 }}>
-          {/* Header del punto */}
+        <div key={p} style={{ borderRadius: 12, border: "2px solid " + (sent ? "#38A169" : muestraOtraFecha ? "#FED7AA" : "#E2E8F0"), background: "#fff", marginBottom: 10, opacity: sent ? 0.92 : 1 }}>
           <div style={{ padding: "12px 14px", borderBottom: "1px solid #F0F0F0", background: muestraOtraFecha ? "#FFF7ED" : (sent ? "#F0FFF4" : "#FAFAFA") }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div style={{ fontSize: 16, fontWeight: "bold", color: "#2D3748" }}>{p}</div>
@@ -683,65 +880,52 @@ export default function NossaCafe() {
               {fechaDisplay(fechaCierreReal)} - {hora} - {resp}
             </div>
             {muestraOtraFecha && (
-              <div style={{ marginTop: 6, fontSize: 10, fontWeight: "bold", color: "#9A3412", background: "#FED7AA", padding: "3px 8px", borderRadius: 6, display: "inline-block" }}>
-                ULTIMO CIERRE DISPONIBLE (no hay datos para {fechaDisplay(fechaObrador)})
+              <div style={{ marginTop: 6, fontSize: 10, fontWeight: "bold", color: "#9A3412", background: "#FED7AA", padding: "5px 8px", borderRadius: 6 }}>
+                Este dato pertenece a otra fecha y no entra en el consolidado seleccionado
               </div>
             )}
           </div>
 
-          {/* Produccion */}
-          <div style={{ padding: "10px 14px" }}>
-            <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#7C5C3B", marginBottom: 6 }}>
-              Produccion ({produccion.length})
+          {produccion.length > 0 && (
+            <div style={{ padding: "10px 14px" }}>
+              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#7C5C3B", marginBottom: 6 }}>Produccion ({produccion.length})</div>
+              {produccion.map(function (it, i) {
+                return (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: i < produccion.length - 1 ? "1px solid #F5F5F5" : "none" }}>
+                    <span style={{ fontSize: 13, color: "#2D3748" }}>{it.nombre}</span>
+                    <span style={{ fontSize: 13, fontWeight: "bold", color: "#7C5C3B" }}>{it.cantidad} und</span>
+                  </div>
+                );
+              })}
             </div>
-            {produccion.length === 0
-              ? <div style={{ fontSize: 12, color: "#6B7280", fontStyle: "italic", padding: "4px 0 8px" }}>Sin produccion pendiente</div>
-              : (
-                <div style={{ marginBottom: 8 }}>
-                  {produccion.map(function (it, i) {
-                    return (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: i < produccion.length - 1 ? "1px solid #F5F5F5" : "none" }}>
-                        <span style={{ fontSize: 13, color: "#2D3748" }}>{it[0]}</span>
-                        <span style={{ fontSize: 13, fontWeight: "bold", color: "#7C5C3B" }}>{it[1]} und</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            }
-          </div>
+          )}
 
-          {/* Pedidos agrupados */}
-          <div style={{ padding: "0 14px 10px", borderTop: "1px solid #F0F0F0" }}>
-            <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#5C4DB1", margin: "10px 0 6px" }}>
-              Pedidos ({pedidos.length})
+          {pedidos.length > 0 && (
+            <div style={{ padding: "10px 14px", borderTop: produccion.length > 0 ? "1px solid #F0F0F0" : "none" }}>
+              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#5C4DB1", marginBottom: 6 }}>Pedidos ({pedidos.length})</div>
+              {Object.keys(pedidosPorCat).map(function (catId) {
+                var lista = pedidosPorCat[catId];
+                return (
+                  <div key={catId} style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: "bold", color: "#9CA3AF", marginBottom: 3 }}>{CAT_NOMBRE[catId] || catId}</div>
+                    {lista.map(function (it, i) {
+                      return (
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
+                          <span style={{ fontSize: 12, color: "#2D3748" }}>{it.nombre}</span>
+                          <span style={{ fontSize: 12, fontWeight: "bold", color: "#5C4DB1" }}>{it.cantidad} und</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
-            {pedidos.length === 0
-              ? <div style={{ fontSize: 12, color: "#6B7280", fontStyle: "italic", padding: "4px 0 8px" }}>Sin pedidos pendientes</div>
-              : (
-                <div>
-                  {Object.keys(pedidosPorCat).map(function (catId) {
-                    var lista = pedidosPorCat[catId];
-                    return (
-                      <div key={catId} style={{ marginBottom: 8 }}>
-                        <div style={{ fontSize: 11, fontWeight: "bold", color: "#9CA3AF", marginBottom: 3 }}>{CAT_NOMBRE[catId] || catId}</div>
-                        {lista.map(function (it, i) {
-                          return (
-                            <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                              <span style={{ fontSize: 12, color: "#2D3748" }}>{it[0]}</span>
-                              <span style={{ fontSize: 12, fontWeight: "bold", color: "#5C4DB1" }}>{it[1]} und</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              )
-            }
-          </div>
+          )}
 
-          {/* Observaciones (si hay) */}
+          {produccion.length === 0 && pedidos.length === 0 && (
+            <div style={{ padding: "12px 14px", fontSize: 12, color: "#6B7280", fontStyle: "italic" }}>Sin produccion ni pedidos pendientes</div>
+          )}
+
           {obs && (
             <div style={{ padding: "8px 14px", borderTop: "1px solid #F0F0F0", background: "#FFFBEB" }}>
               <div style={{ fontSize: 10, fontWeight: "bold", color: "#92400E", textTransform: "uppercase", letterSpacing: 1 }}>Observaciones</div>
@@ -749,14 +933,11 @@ export default function NossaCafe() {
             </div>
           )}
 
-          {/* Marcar enviado */}
           <div style={{ padding: "10px 14px", borderTop: "1px solid #F0F0F0", background: "#FAFAFA" }}>
             <button
               onClick={function () { toggleDespacho(fechaObrador, p); }}
               style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px solid " + (sent ? "#38A169" : "#7C5C3B"), background: sent ? "#38A169" : "#fff", color: sent ? "#fff" : "#7C5C3B", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}
-            >
-              {sent ? "Enviado" : "Marcar enviado"}
-            </button>
+            >{sent ? "Enviado" : "Marcar enviado"}</button>
           </div>
         </div>
       );
@@ -765,6 +946,7 @@ export default function NossaCafe() {
     return (
       <div style={S.page}>
         <div style={S.card}>
+          {/* HEADER */}
           <div style={{ background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "20px 20px 14px", color: "#fff" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
@@ -786,28 +968,87 @@ export default function NossaCafe() {
                   onChange={function (e) { setFechaObrador(e.target.value); }}
                   style={{ flex: 1, minWidth: 140, padding: "7px 9px", borderRadius: 8, border: "none", fontSize: 13, fontFamily: "Georgia, serif", background: "#fff", color: "#2D3748" }}
                 />
-                <button
-                  onClick={function () { setFechaObrador(fechaAyer()); }}
-                  style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 11, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}
-                >Ayer</button>
-                <button
-                  onClick={function () { setFechaObrador(fechaHoy()); }}
-                  style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 11, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}
-                >Hoy</button>
+                <button onClick={function () { setFechaObrador(fechaAyer()); }} style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 11, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}>Ayer</button>
+                <button onClick={function () { setFechaObrador(fechaHoy()); }}  style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 11, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}>Hoy</button>
               </div>
             </div>
 
             <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, fontWeight: "bold", background: "rgba(255,255,255,0.25)", color: "#fff", padding: "4px 12px", borderRadius: 20 }}>{puntosEnConsolidado.length}/3 cerrados</span>
               <span style={{ fontSize: 11, background: "rgba(255,255,255,0.15)", color: "#fff", padding: "4px 12px", borderRadius: 20 }}>{enviadosCount}/3 enviados</span>
               {obradorLoading && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.15)", color: "#fff", padding: "4px 12px", borderRadius: 20 }}>Cargando...</span>}
             </div>
+            {puntosPendientes.length > 0 && (
+              <div style={{ marginTop: 10, background: "rgba(249,115,22,0.25)", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#FED7AA", fontWeight: "600" }}>
+                Sin cierre: {puntosPendientes.join(", ")}
+              </div>
+            )}
           </div>
 
+          {/* CUERPO */}
           <div style={{ padding: "16px 16px 32px", overflowY: "auto", maxHeight: "70vh" }}>
-            <div style={{ fontWeight: "bold", fontSize: 14, color: "#2D3748", marginBottom: 12 }}>
-              Cierre del {fechaDisplay(fechaObrador)}
+
+            {/* SECCION 1: CONSOLIDADO GENERAL */}
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#7C5C3B", marginBottom: 6 }}>
+                Consolidado general de produccion
+              </div>
+              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 10, fontStyle: "italic" }}>
+                Suma de los puntos cerrados para el {fechaDisplay(fechaObrador)}.
+              </div>
+
+              {puntosEnConsolidado.length === 0 ? (
+                <div style={{ padding: 16, background: "#FFF7ED", border: "2px solid #FED7AA", borderRadius: 12, textAlign: "center", color: "#9A3412", fontSize: 13 }}>
+                  Ningun punto cerro el {fechaDisplay(fechaObrador)} todavia.
+                </div>
+              ) : (
+                <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
+
+                  {/* Produccion consolidada */}
+                  <div style={{ padding: "12px 14px", background: "#FFF8F0", borderBottom: "1px solid #F0F0F0" }}>
+                    <div style={{ fontSize: 12, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#7C5C3B" }}>
+                      Produccion ({produccionCons.length})
+                    </div>
+                  </div>
+                  {produccionCons.length === 0
+                    ? <div style={{ padding: "10px 14px", fontSize: 12, color: "#6B7280", fontStyle: "italic" }}>Sin produccion pendiente</div>
+                    : <div style={{ padding: "4px 14px 8px" }}>
+                        {produccionCons.map(function (it, i) { return renderItemConsolidado(it, "prod-" + i, "#7C5C3B"); })}
+                      </div>
+                  }
+
+                  {/* Pedidos consolidados, agrupados por categoria */}
+                  <div style={{ padding: "12px 14px", background: "#F5F3FF", borderTop: "1px solid #F0F0F0", borderBottom: "1px solid #F0F0F0" }}>
+                    <div style={{ fontSize: 12, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#5C4DB1" }}>
+                      Pedidos ({pedidosCons.length})
+                    </div>
+                  </div>
+                  {pedidosCons.length === 0
+                    ? <div style={{ padding: "10px 14px", fontSize: 12, color: "#6B7280", fontStyle: "italic" }}>Sin pedidos pendientes</div>
+                    : <div style={{ padding: "4px 14px 8px" }}>
+                        {Object.keys(pedidosConsPorCat).map(function (catId) {
+                          var lista = pedidosConsPorCat[catId];
+                          return (
+                            <div key={catId} style={{ marginBottom: 8 }}>
+                              <div style={{ fontSize: 11, fontWeight: "bold", color: "#9CA3AF", margin: "6px 0 2px" }}>{CAT_NOMBRE[catId] || catId}</div>
+                              {lista.map(function (it, i) { return renderItemConsolidado(it, catId + "-" + i, "#5C4DB1"); })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                  }
+                </div>
+              )}
             </div>
-            {PUNTOS.map(renderTarjetaPunto)}
+
+            {/* SECCION 2: DESPACHO POR PUNTO */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#5C4DB1", marginBottom: 8 }}>
+                Despacho por punto
+              </div>
+              {PUNTOS.map(renderDespachoPunto)}
+            </div>
+
             <button
               style={{ ...S.btn, background: "#4A5568", fontSize: 14 }}
               onClick={function () { cargarObrador(fechaObrador); }}
@@ -853,30 +1094,170 @@ export default function NossaCafe() {
             )}
             {adminTab === "minmax" && (
               <div>
-                <div style={{ fontWeight: "bold", fontSize: 14, color: "#2D3748", marginBottom: 12 }}>Minimos y Maximos</div>
-                {CATS.map(function (c) {
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                  <div style={{ fontWeight: "bold", fontSize: 14, color: "#2D3748" }}>
+                    Productos {productosLoading ? <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: "normal" }}>cargando...</span> : null}
+                  </div>
+                  <button
+                    onClick={function () { cargarProductos(); }}
+                    style={{ background: "#EDF2F7", border: "none", padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontFamily: "Georgia, serif" }}
+                  >Actualizar</button>
+                </div>
+
+                {/* Boton: Anadir producto */}
+                {!adding ? (
+                  <button
+                    onClick={function () {
+                      setAdding(true);
+                      setACat("pasteleria");
+                      setAName("");
+                      setAMin("");
+                      setAMax("");
+                    }}
+                    style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px dashed #7C5C3B", background: "#FFF8F4", color: "#7C5C3B", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", marginBottom: 14 }}
+                  >+ Anadir producto</button>
+                ) : (
+                  <div style={{ background: "#FFF8F4", border: "2px solid #7C5C3B", borderRadius: 12, padding: 12, marginBottom: 14 }}>
+                    <div style={{ fontWeight: "bold", fontSize: 12, color: "#7C5C3B", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Nuevo producto</div>
+
+                    <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Categoria</div>
+                    <select
+                      value={aCat}
+                      onChange={function (e) { setACat(e.target.value); }}
+                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}
+                    >
+                      {CATS_ORDER.map(function (id) {
+                        return <option key={id} value={id}>{CATS_META[id].nombre}</option>;
+                      })}
+                    </select>
+
+                    <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Nombre</div>
+                    <input
+                      type="text"
+                      value={aName}
+                      onChange={function (e) { setAName(e.target.value); }}
+                      placeholder="Ej: Croissant chocolate"
+                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", boxSizing: "border-box" }}
+                    />
+
+                    <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Min</div>
+                        <input type="number" min="0" value={aMin} onChange={function (e) { setAMin(e.target.value); }} style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Max</div>
+                        <input type="number" min="0" value={aMax} onChange={function (e) { setAMax(e.target.value); }} style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        disabled={savingProd}
+                        onClick={async function () {
+                          var nombre = aName.trim();
+                          var min    = parseInt(aMin, 10);
+                          var max    = parseInt(aMax, 10);
+                          if (!nombre)            { alert("El nombre no puede estar vacio."); return; }
+                          if (isNaN(min) || min < 0) { alert("Min invalido."); return; }
+                          if (isNaN(max) || max < 0) { alert("Max invalido."); return; }
+                          if (max < min)          { alert("Max debe ser >= Min."); return; }
+                          setSavingProd(true);
+                          var r = await apiGuardarProducto(aCat, nombre, min, max);
+                          setSavingProd(false);
+                          if (r && r.success && r.saved) {
+                            setAdding(false);
+                            await cargarProductos();
+                          } else {
+                            alert("Error: " + ((r && r.error) || "no se pudo guardar"));
+                          }
+                        }}
+                        style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#7C5C3B", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", opacity: savingProd ? 0.6 : 1 }}
+                      >{savingProd ? "Guardando..." : "Guardar"}</button>
+                      <button
+                        onClick={function () { setAdding(false); }}
+                        style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1.5px solid #CBD5E0", background: "#fff", color: "#4A5568", fontSize: 13, cursor: "pointer", fontFamily: "Georgia, serif" }}
+                      >Cancelar</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Lista de productos por categoria */}
+                {CATS_ORDER.map(function (catId) {
+                  var meta = CATS_META[catId];
+                  if (!meta) return null;
+                  var prods = productos.filter(function (p) { return p.categoria === catId && p.activo; });
+                  if (prods.length === 0) return (
+                    <div key={catId} style={{ marginBottom: 16 }}>
+                      <div style={{ color: meta.color, fontWeight: "bold", fontSize: 12, margin: "0 0 6px" }}>{meta.nombre}</div>
+                      <div style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic", padding: "8px 12px", background: "#FAFAFA", borderRadius: 8 }}>Sin productos en esta categoria</div>
+                    </div>
+                  );
                   return (
-                    <div key={c.id} style={{ marginBottom: 16 }}>
-                      <div style={{ color: c.color, fontWeight: "bold", fontSize: 12, margin: "0 0 6px" }}>{c.nombre}</div>
+                    <div key={catId} style={{ marginBottom: 16 }}>
+                      <div style={{ color: meta.color, fontWeight: "bold", fontSize: 12, margin: "0 0 6px" }}>{meta.nombre} ({prods.length})</div>
                       <div style={{ background: "#FAFAFA", borderRadius: 12, border: "1px solid #F1F5F9", overflow: "hidden" }}>
-                        {c.productos.map(function (prod, i) {
-                          var mm = getMM(prod.nombre, prod);
-                          var editing = editMM === prod.nombre;
+                        {prods.map(function (prod, i) {
+                          var editing = editProd === prod.producto;
                           return (
-                            <div key={prod.nombre} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderBottom: i < c.productos.length - 1 ? "1px solid #F1F5F9" : "none" }}>
-                              <div style={{ flex: 1, fontSize: 13, color: "#2D3748" }}>{prod.nombre}</div>
-                              {!editing
-                                ? <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <span style={{ fontSize: 11, color: "#6B7280", background: "#F1F5F9", padding: "3px 8px", borderRadius: 20 }}>{mm.min} - {mm.max}</span>
-                                    <button style={{ background: "#EDF2F7", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12 }} onClick={function () { setEditMM(prod.nombre); setEMin(String(mm.min)); setEMax(String(mm.max)); }}>Ed</button>
+                            <div key={prod.producto} style={{ padding: "10px 12px", borderBottom: i < prods.length - 1 ? "1px solid #F1F5F9" : "none" }}>
+                              {!editing ? (
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+                                  <div style={{ flex: 1, fontSize: 13, color: "#2D3748" }}>{prod.producto}</div>
+                                  <span style={{ fontSize: 11, color: "#6B7280", background: "#F1F5F9", padding: "3px 8px", borderRadius: 20 }}>{prod.min} - {prod.max}</span>
+                                  <button
+                                    title="Editar"
+                                    onClick={function () { setEditProd(prod.producto); setEMin(String(prod.min)); setEMax(String(prod.max)); }}
+                                    style={{ background: "#EDF2F7", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif" }}
+                                  >Editar</button>
+                                  <button
+                                    title="Eliminar"
+                                    onClick={async function () {
+                                      if (!confirm("Eliminar \"" + prod.producto + "\"?\n\nQuedara inactivo y dejara de aparecer en cierres y Obrador. No se borra el historial.")) return;
+                                      setSavingProd(true);
+                                      var r = await apiEliminarProducto(prod.producto);
+                                      setSavingProd(false);
+                                      if (r && r.success) await cargarProductos();
+                                      else alert("Error: " + ((r && r.error) || "no se pudo eliminar"));
+                                    }}
+                                    style={{ background: "#FEE2E2", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif", color: "#991B1B" }}
+                                  >X</button>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div style={{ fontSize: 13, color: "#2D3748", fontWeight: "bold", marginBottom: 6 }}>{prod.producto}</div>
+                                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                                    <span style={{ fontSize: 11, color: "#6B7280" }}>Min</span>
+                                    <input type="number" min="0" value={eMin} onChange={function (e) { setEMin(e.target.value); }} style={{ width: 50, padding: "6px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 14, textAlign: "center" }} />
+                                    <span style={{ fontSize: 11, color: "#6B7280" }}>Max</span>
+                                    <input type="number" min="0" value={eMax} onChange={function (e) { setEMax(e.target.value); }} style={{ width: 50, padding: "6px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 14, textAlign: "center" }} />
+                                    <button
+                                      disabled={savingProd}
+                                      onClick={async function () {
+                                        var min = parseInt(eMin, 10);
+                                        var max = parseInt(eMax, 10);
+                                        if (isNaN(min) || min < 0) { alert("Min invalido."); return; }
+                                        if (isNaN(max) || max < 0) { alert("Max invalido."); return; }
+                                        if (max < min) { alert("Max debe ser >= Min."); return; }
+                                        setSavingProd(true);
+                                        var r = await apiActualizarProducto(prod.producto, { min: min, max: max });
+                                        setSavingProd(false);
+                                        if (r && r.success) {
+                                          setEditProd(null);
+                                          await cargarProductos();
+                                        } else {
+                                          alert("Error: " + ((r && r.error) || "no se pudo actualizar"));
+                                        }
+                                      }}
+                                      style={{ background: "#38A169", color: "#fff", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: "bold", opacity: savingProd ? 0.6 : 1 }}
+                                    >Guardar</button>
+                                    <button
+                                      onClick={function () { setEditProd(null); }}
+                                      style={{ background: "#E2E8F0", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif" }}
+                                    >Cancelar</button>
                                   </div>
-                                : <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                                    <input style={{ width: 40, padding: "6px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 14, textAlign: "center" }} type="number" value={eMin} onChange={function (e) { setEMin(e.target.value); }} />
-                                    <input style={{ width: 40, padding: "6px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 14, textAlign: "center" }} type="number" value={eMax} onChange={function (e) { setEMax(e.target.value); }} />
-                                    <button style={{ background: "#38A169", color: "#fff", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: "bold" }} onClick={function () { var u = Object.assign({}, minMax); u[prod.nombre] = { min: parseInt(eMin) || prod.min, max: parseInt(eMax) || prod.max }; saveMinMax(u); setEditMM(null); }}>OK</button>
-                                    <button style={{ background: "#E2E8F0", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer" }} onClick={function () { setEditMM(null); }}>X</button>
-                                  </div>
-                              }
+                                </div>
+                              )}
                             </div>
                           );
                         })}
@@ -884,7 +1265,10 @@ export default function NossaCafe() {
                     </div>
                   );
                 })}
-                <button style={{ ...S.btn, background: "#4A5568" }} onClick={function () { saveMinMax({}); alert("Restablecido."); }}>Restablecer valores</button>
+
+                <div style={{ marginTop: 12, padding: 10, background: "#F0FFF4", borderRadius: 10, fontSize: 11, color: "#15803D" }}>
+                  Cambios persisten en la hoja PRODUCTOS de Google Sheets.
+                </div>
               </div>
             )}
           </div>
