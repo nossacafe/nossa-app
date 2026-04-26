@@ -876,13 +876,6 @@ export default function NossaCafe() {
     setCierres([]);
   }
 }
-
-setCierres(lista);
-} catch (e) {
-      console.warn("No se pudo cargar estado desde Sheets:", e);
-    }
-  }
-
   async function syncToSheets(cierre) {
     if (!sheetsUrl) {
       alert("No hay URL de Apps Script configurada. Ve al panel Admin.");
