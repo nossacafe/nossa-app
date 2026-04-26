@@ -888,77 +888,83 @@ export default function NossaCafe() {
     }
   }
 
-  async function syncToSheets(cierre) {
-    var url = sheetsUrl || DEFAULT_APPS_SCRIPT_URL;
+async function syncToSheets(cierre) {
+  var url = sheetsUrl || DEFAULT_APPS_SCRIPT_URL;
 
-    if (!url) {
-      alert("No hay URL de Apps Script configurada.");
-      return false;
-    }
-
-    try {
-      setSyncStatus("syncing");
-
-      var fecha = new Date().toISOString().slice(0, 10);
-
-      var productos = {};
-      if (cierre.stocks) {
-        Object.keys(cierre.stocks).forEach(function (k) {
-          if (cierre.stocks[k] !== undefined) productos[k] = cierre.stocks[k];
-        });
-      }
-
-      var datos = {
-        hora: cierre.hora || "",
-        responsable: cierre.responsable || "",
-        pedido: cierre.pedido || [],
-        productos: productos,
-        skipped: cierre.skipped || {},
-        esCorreccion: !!cierre.esCorreccion,
-        nota: cierre.nota || ""
-      };
-
-      var params = new URLSearchParams({
-        action: "guardarCierre",
-        fecha: fecha,
-        punto: cierre.punto,
-        datos: JSON.stringify(datos)
-      });
-
-      var saveUrl = url + "?" + params.toString();
-      console.log("GUARDANDO EN:", saveUrl);
-
-      var res = await fetch(saveUrl);
-      var text = await res.text();
-      console.log("RESPUESTA GUARDAR:", text);
-
-      var data = {};
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        alert("Apps Script respondió algo inválido:\n" + text);
-        setSyncStatus("error");
-        return false;
-      }
-
-      if (!data.success) {
-        alert("No se guardó el cierre:\n" + (data.error || "Error desconocido"));
-        setSyncStatus("error");
-        return false;
-      }
-
-      await cargarCierresDesdeSheets(url);
-      setSyncStatus("ok");
-      setTimeout(function () { setSyncStatus(""); }, 3000);
-      return true;
-    } catch (e) {
-      console.error("Error guardando cierre:", e);
-      alert("Error guardando cierre:\n" + e.message);
-      setSyncStatus("error");
-      return false;
-    }
+  if (!url) {
+    alert("No hay URL de Apps Script configurada.");
+    return false;
   }
 
+  try {
+    setSyncStatus("syncing");
+
+    var fecha = new Date().toISOString().slice(0, 10);
+
+    var productos = {};
+    if (cierre.stocks) {
+      Object.keys(cierre.stocks).forEach(function (k) {
+        if (cierre.stocks[k] !== undefined) {
+          productos[k] = cierre.stocks[k];
+        }
+      });
+    }
+
+    var datos = {
+      hora: cierre.hora || "",
+      responsable: cierre.responsable || "",
+      pedido: cierre.pedido || [],
+      productos: productos,
+      skipped: cierre.skipped || {},
+      esCorreccion: !!cierre.esCorreccion,
+      nota: cierre.nota || ""
+    };
+
+    var params = new URLSearchParams({
+      action: "guardarCierre",
+      fecha: fecha,
+      punto: cierre.punto,
+      datos: JSON.stringify(datos),
+      cacheBust: Date.now().toString()
+    });
+
+    var saveUrl = url + "?" + params.toString();
+
+    console.log("GUARDANDO CIERRE EN:", saveUrl);
+
+    await new Promise(function (resolve) {
+      var img = new Image();
+      var done = false;
+
+      function finish() {
+        if (done) return;
+        done = true;
+        resolve();
+      }
+
+      img.onload = finish;
+      img.onerror = finish;
+      img.src = saveUrl;
+
+      setTimeout(finish, 2500);
+    });
+
+    await cargarCierresDesdeSheets(url);
+
+    setSyncStatus("ok");
+    setTimeout(function () {
+      setSyncStatus("");
+    }, 3000);
+
+    return true;
+
+  } catch (e) {
+    console.error("Error guardando cierre:", e);
+    alert("Error guardando cierre:\n" + e.message);
+    setSyncStatus("error");
+    return false;
+  }
+}
   var todayStr = new Date().toLocaleDateString("es-CO");
 
   function getCierreHoy(p) {
