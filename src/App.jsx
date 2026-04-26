@@ -653,6 +653,7 @@ function AdminView({ cierres, minMax, getMM, saveMinMax, sheetsUrl, setSheetsUrl
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function NossaCafe() {
+  const s = STYLES;
   const [screen, setScreen]           = useState("inicio");
   const [punto, setPunto]             = useState(null);
   const [responsable, setResponsable] = useState("");
