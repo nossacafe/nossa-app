@@ -949,9 +949,6 @@ export default function NossaCafe() {
   }
 }
 
-      // Re-fetch from Sheets to confirm state — no marcamos completo hasta que Sheets confirme
-      await cargarCierresDesdeSheets(sheetsUrl);
-
     } catch (e) {
       console.error("syncToSheets exception:", e);
       alert("Error de red al conectar con Google Sheets:\n" + e.message);
