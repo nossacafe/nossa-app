@@ -859,7 +859,7 @@ export default function NossaCafe() {
         if (data.cierres[p]) {
           lista.push({
             id: p + "-" + fecha,
-            fecha: fecha,
+            fecha: new Date().toISOString(),
             hora: "--",
             punto: p,
             responsable: "",
