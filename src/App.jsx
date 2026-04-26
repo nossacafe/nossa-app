@@ -847,11 +847,18 @@ export default function NossaCafe() {
       var fecha = new Date().toISOString().slice(0, 10);
       var res = await fetch(url + "?action=estadoCierres&fecha=" + fecha);
       var data = await res.json();
-      if (Array.isArray(data)) {
-        setCierres(data);
-      } else if (data && Array.isArray(data.cierres)) {
-        setCierres(data.cierres);
-      }
+     if (data && data.cierres) {
+  const cierresObj = data.cierres;
+
+  const lista = Object.keys(cierresObj).map(function (p) {
+    return {
+      punto: p,
+      completo: cierresObj[p]
+    };
+  });
+
+  setCierres(lista);
+}
     } catch (e) {
       console.warn("No se pudo cargar estado desde Sheets:", e);
     }
