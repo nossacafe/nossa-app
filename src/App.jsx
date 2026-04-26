@@ -680,11 +680,12 @@ export default function NossaCafe() {
     (async function () {
       var c   = await dbGet("nossa_config")       || {};
       var mm  = await dbGet("nossa_minmax")       || {};
-      var cl  = await dbGet("nossa_cierres")      || [];
       var dep = await dbGet("nossa_obra_desp")    || { Centro: false, Primavera: false, CF: false };
       var cp  = await dbGet("nossa_custom_prods") || [];
-      setConfig(c); setMinMax(mm); setCierres(cl);
-      setSheetsUrl(c.sheetsUrl || ""); setDespacho(dep); setCustomProds(cp);
+      var url = c.sheetsUrl || "";
+      setConfig(c); setMinMax(mm);
+      setSheetsUrl(url); setDespacho(dep); setCustomProds(cp);
+      if (url) await cargarCierresDesdeSheets(url);
     })();
   }, []);
 
@@ -807,13 +808,52 @@ export default function NossaCafe() {
     return msg;
   }
 
+  async function cargarCierresDesdeSheets(url) {
+    if (!url) return;
+    try {
+      var fecha = new Date().toISOString().slice(0, 10);
+      var res = await fetch(url + "?action=estadoCierres&fecha=" + fecha);
+      var data = await res.json();
+      if (Array.isArray(data)) {
+        setCierres(data);
+      } else if (data && Array.isArray(data.cierres)) {
+        setCierres(data.cierres);
+      }
+    } catch (e) {
+      console.warn("No se pudo cargar estado desde Sheets:", e);
+    }
+  }
+
   async function syncToSheets(cierre) {
     if (!sheetsUrl) return;
     setSyncStatus("syncing");
     try {
-      await fetch(sheetsUrl, { method: "POST", mode: "no-cors", body: JSON.stringify(cierre), headers: { "Content-Type": "application/json" } });
+      var fecha = new Date().toISOString().slice(0, 10);
+      var productos = {};
+      if (cierre.stocks) {
+        Object.keys(cierre.stocks).forEach(function (k) {
+          if (cierre.stocks[k] !== undefined) productos[k] = cierre.stocks[k];
+        });
+      }
+      var payload = {
+        action: "guardarCierre",
+        fecha: fecha,
+        punto: cierre.punto,
+        datos: {
+          hora: cierre.hora,
+          responsable: cierre.responsable || "",
+          pedido: cierre.pedido || [],
+          productos: productos,
+        },
+      };
+      await fetch(sheetsUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       setSyncStatus("ok");
       setTimeout(function () { setSyncStatus(""); }, 3000);
+      await cargarCierresDesdeSheets(sheetsUrl);
     } catch (e) {
       setSyncStatus("error");
       setTimeout(function () { setSyncStatus(""); }, 4000);
@@ -848,8 +888,6 @@ export default function NossaCafe() {
     } else {
       updated = [cierre].concat(cierres).slice(0, 200);
     }
-    await dbSet("nossa_cierres", updated);
-    setCierres(updated);
     await syncToSheets(cierre);
     setModoEdicion(false);
     setScreen("resumen");
@@ -858,9 +896,6 @@ export default function NossaCafe() {
   async function submitCorreccion() {
     if (!corrProd.trim() || !corrCant) return;
     var corr = { id: Date.now(), fecha: new Date().toISOString(), hora: hora, punto: punto, responsable: responsable, esCorreccion: true, pedido: [{ cat: "Correccion", prod: corrProd.trim(), cantidad: parseInt(corrCant) || 0 }], nota: corrNota.trim() };
-    var updated = [corr].concat(cierres).slice(0, 200);
-    await dbSet("nossa_cierres", updated);
-    setCierres(updated);
     setCorrProd(""); setCorrCant(""); setCorrNota("");
     setScreen("resumen");
   }
