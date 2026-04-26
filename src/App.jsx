@@ -985,8 +985,11 @@ export default function NossaCafe() {
   async function submitCorreccion() {
     if (!corrProd.trim() || !corrCant) return;
     var corr = { id: Date.now(), fecha: new Date().toISOString(), hora: hora, punto: punto, responsable: responsable, esCorreccion: true, pedido: [{ cat: "Correccion", prod: corrProd.trim(), cantidad: parseInt(corrCant) || 0 }], nota: corrNota.trim() };
-    setCorrProd(""); setCorrCant(""); setCorrNota("");
-    setScreen("resumen");
+   await syncToSheets(corr);
+setCorrProd("");
+setCorrCant("");
+setCorrNota("");
+setScreen("resumen");
   }
 
   function abrirEdicion(p) {
