@@ -884,7 +884,8 @@ export default function NossaCafe() {
       };
 
       console.log("POST payload:", JSON.stringify(payload));
-
+console.log("SHEETS URL:", sheetsUrl);
+alert("URL usada: " + sheetsUrl);
       // No Content-Type: application/json para evitar preflight CORS con Apps Script
       var res = await fetch(sheetsUrl, {
   method: "POST",
