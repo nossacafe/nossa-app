@@ -124,13 +124,26 @@ function lsSet(k, v) {
 }
 
 // ─── API ─────────────────────────────────────────────────────────────────────
+function dispararGetSinCors(url) {
+  return new Promise(function (resolve) {
+    var img  = new Image();
+    var done = false;
+    function finish() { if (done) return; done = true; resolve(true); }
+    img.onload  = finish;
+    img.onerror = finish;
+    img.src = url;
+    setTimeout(finish, 2500);
+  });
+}
+
 async function apiEstadoCierres() {
   var fecha = fechaHoy();
   var url = DEFAULT_APPS_SCRIPT_URL + "?action=estadoCierres&fecha=" + fecha;
   console.log("GET estadoCierres:", url);
   try {
-    var res = await fetch(url);
-    var data = await res.json();
+    var res  = await fetch(url);
+    var text = await res.text();
+    var data = JSON.parse(text);
     console.log("Respuesta estadoCierres:", data);
     if (data && data.success && data.cierres) return data.cierres;
   } catch (e) {
@@ -139,28 +152,26 @@ async function apiEstadoCierres() {
   return { Centro: false, Primavera: false, CF: false };
 }
 
-async function apiGuardarCierre(selectedPoint, datos) {
-  if (!selectedPoint) {
-    alert("Error: selectedPoint es null. No se puede guardar.");
+async function apiGuardarCierre(punto, datos) {
+  if (!punto) {
+    alert("Error: punto es null. No se puede guardar.");
     return false;
   }
+  var fecha    = fechaHoy();
+  var finalUrl = DEFAULT_APPS_SCRIPT_URL
+    + "?action=guardarCierre"
+    + "&fecha="  + encodeURIComponent(fecha)
+    + "&punto="  + encodeURIComponent(punto)
+    + "&datos="  + encodeURIComponent(JSON.stringify(datos));
 
-  var fecha = fechaHoy();
-  var finalUrl =
-    DEFAULT_APPS_SCRIPT_URL +
-    "?action=guardarCierre" +
-    "&fecha=" + fecha +
-    "&punto=" + encodeURIComponent(selectedPoint) +
-    "&datos=" + encodeURIComponent(JSON.stringify(datos));
+  console.log("GET guardarCierre:", finalUrl);
+  console.log("URL length:", finalUrl.length);
 
-  console.log("URL FINAL GUARDAR:", finalUrl);
+  await dispararGetSinCors(finalUrl);
+  console.log("dispararGetSinCors completado — esperando 1000ms");
 
-  await fetch(finalUrl, { method: "GET", mode: "no-cors" });
-
-  // Esperar 1000ms para que Sheets procese
   await new Promise(function (r) { setTimeout(r, 1000); });
 
-  // Verificar con estadoCierres
   var estado = await apiEstadoCierres();
   return estado;
 }
