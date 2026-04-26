@@ -1175,7 +1175,15 @@ const res = await fetch(`${sheetsUrl}?${params.toString()}`);
               <textarea style={{ width: "100%", borderRadius: 8, border: "1px solid #C6F6D5", padding: 10, fontSize: 11, color: "#2D3748", background: "#fff", resize: "none", fontFamily: "monospace", boxSizing: "border-box", lineHeight: 1.6 }} readOnly value={mensaje} rows={Math.min(14, mensaje.split("\n").length + 2)} />
               <button style={{ width: "100%", padding: 11, borderRadius: 10, border: "none", background: "#38A169", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", marginTop: 8 }} onClick={function () { if (navigator.clipboard) navigator.clipboard.writeText(mensaje); alert("Copiado!"); }}>Copiar</button>
             </div>
-            <button style={{ ...S.btn, background: "#4A5568" }} onClick={reiniciar}>Nuevo cierre</button>
+            <button 
+  style={{ ...s.btn, background: "#4A5568" }} 
+  onClick={async () => {
+    reiniciar();
+    await cargarCierresDesdeSheets();
+  }}
+>
+  Nuevo cierre
+</button>
           </div>
         </div>
       </div>
