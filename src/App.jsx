@@ -151,7 +151,7 @@ async function dbSet(k, v) {
 }
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
-var s = {
+var STYLES = {
   page: { minHeight: "100vh", background: "#F2EDE8", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12, fontFamily: "Georgia, serif" },
   card: { width: "100%", maxWidth: 480, background: "#fff", borderRadius: 20, boxShadow: "0 6px 40px rgba(0,0,0,0.12)", overflow: "hidden" },
   hero: { background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "36px 24px 28px", textAlign: "center", color: "#fff" },
