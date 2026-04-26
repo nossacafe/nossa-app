@@ -880,31 +880,74 @@ export default function NossaCafe() {
   }
 }
   async function syncToSheets(cierre) {
-    if (!sheetsUrl) {
-      alert("No hay URL de Apps Script configurada. Ve al panel Admin.");
+  var url = sheetsUrl || DEFAULT_APPS_SCRIPT_URL;
+
+  if (!url) {
+    alert("No hay URL de Apps Script configurada.");
+    return;
+  }
+
+  try {
+    setSyncStatus("syncing");
+
+    var fecha = new Date().toISOString().slice(0, 10);
+
+    var productos = {};
+    if (cierre.stocks) {
+      Object.keys(cierre.stocks).forEach(function (k) {
+        if (cierre.stocks[k] !== undefined) productos[k] = cierre.stocks[k];
+      });
+    }
+
+    var datos = {
+      hora: cierre.hora || "",
+      responsable: cierre.responsable || "",
+      pedido: cierre.pedido || [],
+      productos: productos
+    };
+
+    var params = new URLSearchParams({
+      action: "guardarCierre",
+      fecha: fecha,
+      punto: cierre.punto,
+      datos: JSON.stringify(datos)
+    });
+
+    var saveUrl = url + "?" + params.toString();
+
+    console.log("GUARDANDO EN:", saveUrl);
+
+    var res = await fetch(saveUrl);
+    var text = await res.text();
+
+    console.log("RESPUESTA GUARDAR:", text);
+
+    var data = {};
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      alert("Apps Script respondió algo inválido:\n" + text);
+      setSyncStatus("error");
       return;
     }
-    setSyncStatus("syncing");
-    try {
-      var fecha = new Date().toISOString().slice(0, 10);
-      var productos = {};
-      if (cierre.stocks) {
-        Object.keys(cierre.stocks).forEach(function (k) {
-          if (cierre.stocks[k] !== undefined) productos[k] = cierre.stocks[k];
-        });
-      }
-      var payload = {
-        action: "guardarCierre",
-        fecha: fecha,
-        punto: cierre.punto,
-        datos: {
-          hora: cierre.hora,
-          responsable: cierre.responsable || "",
-          pedido: cierre.pedido || [],
-          productos: productos,
-        },
-      };
 
+    if (!data.success) {
+      alert("No se guardó el cierre:\n" + (data.error || "Error desconocido"));
+      setSyncStatus("error");
+      return;
+    }
+
+    await cargarCierresDesdeSheets(url);
+
+    setSyncStatus("ok");
+    alert("Cierre guardado correctamente");
+
+  } catch (e) {
+    console.error("Error guardando cierre:", e);
+    alert("Error guardando cierre:\n" + e.message);
+    setSyncStatus("error");
+  }
+}
       console.log("POST payload:", JSON.stringify(payload));
 console.log("SHEETS URL:", sheetsUrl);
 alert("URL usada: " + sheetsUrl);
