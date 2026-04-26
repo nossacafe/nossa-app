@@ -32,75 +32,93 @@ const CAT_NOMBRE = (function () {
 // ─── PRODUCTOS — FALLBACK LOCAL ───────────────────────────────────────────────
 // Solo se usa si Apps Script no responde y no hay cache en localStorage.
 // La fuente de verdad es la hoja PRODUCTOS (cargada en boot).
-const PRODUCTOS_FALLBACK = [
+// ─── PRODUCTOS — FALLBACK LOCAL ───────────────────────────────────────────────
+// Solo se usa si Apps Script no responde y no hay cache en localStorage.
+// La fuente de verdad es la hoja PRODUCTOS (cargada en boot).
+// Cada producto se expande automaticamente a 3 puntos (Centro/Primavera/CF).
+// cf_extra solo se siembra en CF.
+const PRODUCTOS_FALLBACK_BASE = [
   // Pasteleria
-  { categoria: "pasteleria", producto: "Pastel pollo", min: 12, max: 18, activo: true },
-  { categoria: "pasteleria", producto: "Almojavanas", min: 2, max: 5, activo: true },
-  { categoria: "pasteleria", producto: "Galleta avena", min: 3, max: 6, activo: true },
-  { categoria: "pasteleria", producto: "Galleta macadamia", min: 3, max: 6, activo: true },
-  { categoria: "pasteleria", producto: "Galleta chocolate", min: 2, max: 4, activo: true },
-  { categoria: "pasteleria", producto: "Empanada carne", min: 6, max: 18, activo: true },
-  { categoria: "pasteleria", producto: "Empanada pollo", min: 6, max: 18, activo: true },
-  { categoria: "pasteleria", producto: "Croissant mantequilla", min: 2, max: 6, activo: true },
-  { categoria: "pasteleria", producto: "Croissant almendra", min: 2, max: 6, activo: true },
-  { categoria: "pasteleria", producto: "Eclair maracuya", min: 5, max: 10, activo: true },
-  { categoria: "pasteleria", producto: "Torta zanahoria", min: 6, max: 10, activo: true },
-  { categoria: "pasteleria", producto: "Torta chocolate", min: 6, max: 10, activo: true },
-  { categoria: "pasteleria", producto: "Torta naranja", min: 2, max: 6, activo: true },
-  { categoria: "pasteleria", producto: "Torta almojavana", min: 2, max: 6, activo: true },
-  { categoria: "pasteleria", producto: "Tarta cafe", min: 4, max: 8, activo: true },
-  { categoria: "pasteleria", producto: "Tarta arandanos", min: 6, max: 12, activo: true },
-  { categoria: "pasteleria", producto: "Cheesecake lulo", min: 3, max: 7, activo: true },
-  { categoria: "pasteleria", producto: "Cheesecake guayaba", min: 2, max: 5, activo: true },
-  { categoria: "pasteleria", producto: "Mangos", min: 4, max: 8, activo: true },
-  { categoria: "pasteleria", producto: "Tres leches", min: 3, max: 6, activo: true },
-  { categoria: "pasteleria", producto: "Milhojas arequipe", min: 5, max: 8, activo: true },
-  { categoria: "pasteleria", producto: "Milhojas limon", min: 5, max: 8, activo: true },
-  { categoria: "pasteleria", producto: "Cocos", min: 3, max: 6, activo: true },
-  { categoria: "pasteleria", producto: "Fresas und", min: 3, max: 8, activo: true },
-  { categoria: "pasteleria", producto: "Osos", min: 8, max: 12, activo: true },
+  { categoria: "pasteleria", producto: "Pastel pollo", min: 12, max: 18 },
+  { categoria: "pasteleria", producto: "Almojavanas", min: 2, max: 5 },
+  { categoria: "pasteleria", producto: "Galleta avena", min: 3, max: 6 },
+  { categoria: "pasteleria", producto: "Galleta macadamia", min: 3, max: 6 },
+  { categoria: "pasteleria", producto: "Galleta chocolate", min: 2, max: 4 },
+  { categoria: "pasteleria", producto: "Empanada carne", min: 6, max: 18 },
+  { categoria: "pasteleria", producto: "Empanada pollo", min: 6, max: 18 },
+  { categoria: "pasteleria", producto: "Croissant mantequilla", min: 2, max: 6 },
+  { categoria: "pasteleria", producto: "Croissant almendra", min: 2, max: 6 },
+  { categoria: "pasteleria", producto: "Eclair maracuya", min: 5, max: 10 },
+  { categoria: "pasteleria", producto: "Torta zanahoria", min: 6, max: 10 },
+  { categoria: "pasteleria", producto: "Torta chocolate", min: 6, max: 10 },
+  { categoria: "pasteleria", producto: "Torta naranja", min: 2, max: 6 },
+  { categoria: "pasteleria", producto: "Torta almojavana", min: 2, max: 6 },
+  { categoria: "pasteleria", producto: "Tarta cafe", min: 4, max: 8 },
+  { categoria: "pasteleria", producto: "Tarta arandanos", min: 6, max: 12 },
+  { categoria: "pasteleria", producto: "Cheesecake lulo", min: 3, max: 7 },
+  { categoria: "pasteleria", producto: "Cheesecake guayaba", min: 2, max: 5 },
+  { categoria: "pasteleria", producto: "Mangos", min: 4, max: 8 },
+  { categoria: "pasteleria", producto: "Tres leches", min: 3, max: 6 },
+  { categoria: "pasteleria", producto: "Milhojas arequipe", min: 5, max: 8 },
+  { categoria: "pasteleria", producto: "Milhojas limon", min: 5, max: 8 },
+  { categoria: "pasteleria", producto: "Cocos", min: 3, max: 6 },
+  { categoria: "pasteleria", producto: "Fresas und", min: 3, max: 8 },
+  { categoria: "pasteleria", producto: "Osos", min: 8, max: 12 },
   // Cafeteria
-  { categoria: "cafeteria", producto: "Crema whisky", min: 1, max: 1, activo: true },
-  { categoria: "cafeteria", producto: "Hierbabuena", min: 1, max: 1, activo: true },
-  { categoria: "cafeteria", producto: "Tarro aro fresa", min: 1, max: 1, activo: true },
-  { categoria: "cafeteria", producto: "Tarro aro papaya", min: 1, max: 1, activo: true },
-  { categoria: "cafeteria", producto: "Tarro aro mora", min: 1, max: 1, activo: true },
-  { categoria: "cafeteria", producto: "Leche almendra cajax6", min: 2, max: 6, activo: true },
-  { categoria: "cafeteria", producto: "Varietales", min: 2, max: 6, activo: true },
+  { categoria: "cafeteria", producto: "Crema whisky", min: 1, max: 1 },
+  { categoria: "cafeteria", producto: "Hierbabuena", min: 1, max: 1 },
+  { categoria: "cafeteria", producto: "Tarro aro fresa", min: 1, max: 1 },
+  { categoria: "cafeteria", producto: "Tarro aro papaya", min: 1, max: 1 },
+  { categoria: "cafeteria", producto: "Tarro aro mora", min: 1, max: 1 },
+  { categoria: "cafeteria", producto: "Leche almendra cajax6", min: 2, max: 6 },
+  { categoria: "cafeteria", producto: "Varietales", min: 2, max: 6 },
   // Limpieza
-  { categoria: "limpieza", producto: "Toallas manos paq", min: 2, max: 6, activo: true },
-  { categoria: "limpieza", producto: "Jabon loza", min: 1, max: 2, activo: true },
-  { categoria: "limpieza", producto: "Jabon lavavajillas", min: 1, max: 2, activo: true },
-  { categoria: "limpieza", producto: "Jabon de manos", min: 2, max: 6, activo: true },
-  { categoria: "limpieza", producto: "Esponjas", min: 1, max: 3, activo: true },
-  { categoria: "limpieza", producto: "Alcohol", min: 1, max: 1, activo: true },
-  { categoria: "limpieza", producto: "Cloro", min: 2, max: 6, activo: true },
-  { categoria: "limpieza", producto: "Limpiones", min: 2, max: 6, activo: true },
+  { categoria: "limpieza", producto: "Toallas manos paq", min: 2, max: 6 },
+  { categoria: "limpieza", producto: "Jabon loza", min: 1, max: 2 },
+  { categoria: "limpieza", producto: "Jabon lavavajillas", min: 1, max: 2 },
+  { categoria: "limpieza", producto: "Jabon de manos", min: 2, max: 6 },
+  { categoria: "limpieza", producto: "Esponjas", min: 1, max: 3 },
+  { categoria: "limpieza", producto: "Alcohol", min: 1, max: 1 },
+  { categoria: "limpieza", producto: "Cloro", min: 2, max: 6 },
+  { categoria: "limpieza", producto: "Limpiones", min: 2, max: 6 },
   // Empaques
-  { categoria: "empaques", producto: "Bolsa manija grande", min: 15, max: 30, activo: true },
-  { categoria: "empaques", producto: "Bolsa manija mediana", min: 15, max: 30, activo: true },
-  { categoria: "empaques", producto: "Bolsa parafinada grande", min: 2, max: 4, activo: true },
-  { categoria: "empaques", producto: "Bolsa parafinada pequena", min: 2, max: 4, activo: true },
-  { categoria: "empaques", producto: "Servilletas", min: 1, max: 2, activo: true },
+  { categoria: "empaques", producto: "Bolsa manija grande", min: 15, max: 30 },
+  { categoria: "empaques", producto: "Bolsa manija mediana", min: 15, max: 30 },
+  { categoria: "empaques", producto: "Bolsa parafinada grande", min: 2, max: 4 },
+  { categoria: "empaques", producto: "Bolsa parafinada pequena", min: 2, max: 4 },
+  { categoria: "empaques", producto: "Servilletas", min: 1, max: 2 },
   // Materias
-  { categoria: "materias", producto: "Te matcha", min: 1, max: 1, activo: true },
-  { categoria: "materias", producto: "Beach party te", min: 2, max: 6, activo: true },
-  { categoria: "materias", producto: "Chocolate mezcla", min: 1, max: 1, activo: true },
-  { categoria: "materias", producto: "Amaretto", min: 1, max: 2, activo: true },
-  { categoria: "materias", producto: "Pulpa de mango", min: 3, max: 6, activo: true },
-  { categoria: "materias", producto: "Guanabana pulpa", min: 2, max: 6, activo: true },
-  { categoria: "materias", producto: "Mora pulpa", min: 2, max: 6, activo: true },
-  { categoria: "materias", producto: "Fresa pulpa", min: 2, max: 6, activo: true },
-  { categoria: "materias", producto: "Huevos und", min: 2, max: 4, activo: true },
-  { categoria: "materias", producto: "Limones und", min: 3, max: 5, activo: true },
-  { categoria: "materias", producto: "Avena en polvo", min: 1, max: 1, activo: true },
+  { categoria: "materias", producto: "Te matcha", min: 1, max: 1 },
+  { categoria: "materias", producto: "Beach party te", min: 2, max: 6 },
+  { categoria: "materias", producto: "Chocolate mezcla", min: 1, max: 1 },
+  { categoria: "materias", producto: "Amaretto", min: 1, max: 2 },
+  { categoria: "materias", producto: "Pulpa de mango", min: 3, max: 6 },
+  { categoria: "materias", producto: "Guanabana pulpa", min: 2, max: 6 },
+  { categoria: "materias", producto: "Mora pulpa", min: 2, max: 6 },
+  { categoria: "materias", producto: "Fresa pulpa", min: 2, max: 6 },
+  { categoria: "materias", producto: "Huevos und", min: 2, max: 4 },
+  { categoria: "materias", producto: "Limones und", min: 3, max: 5 },
+  { categoria: "materias", producto: "Avena en polvo", min: 1, max: 1 },
   // CF extra
-  { categoria: "cf_extra", producto: "Muffin arandano frambuesa", min: 2, max: 6, activo: true },
-  { categoria: "cf_extra", producto: "Gansito", min: 2, max: 6, activo: true },
+  { categoria: "cf_extra", producto: "Muffin arandano frambuesa", min: 2, max: 6 },
+  { categoria: "cf_extra", producto: "Gansito", min: 2, max: 6 },
 ];
+
+const PRODUCTOS_FALLBACK = (function () {
+  var out = [];
+  PRODUCTOS_FALLBACK_BASE.forEach(function (p) {
+    var puntos = (p.categoria === "cf_extra") ? ["CF"] : ["Centro", "Primavera", "CF"];
+    puntos.forEach(function (pt) {
+      out.push({ categoria: p.categoria, producto: p.producto, punto: pt, min: p.min, max: p.max, activo: true });
+    });
+  });
+  return out;
+})();
 
 // Construye un map nombre -> categoria a partir de un array de productos.
 // Incluye productos inactivos (para que cierres historicos sigan categorizables en Obrador).
+// Nota: el mismo `producto` aparece en multiples puntos pero comparte categoria, asi que
+// el ultimo wins es seguro (todos coincidirian).
 function buildProductoACat(productosArr) {
   var m = {};
   productosArr.forEach(function (p) { m[p.producto] = p.categoria; });
@@ -247,8 +265,11 @@ async function apiUltimoCierre(punto) {
 }
 
 // ─── API PRODUCTOS ─────────────────────────────────────────────────────────────
-async function apiListarProductos() {
+async function apiListarProductos(opts) {
+  var o = opts || {};
   var url = DEFAULT_APPS_SCRIPT_URL + "?action=listarProductos";
+  if (o.punto)            url += "&punto=" + encodeURIComponent(o.punto);
+  if (o.incluirInactivos) url += "&incluirInactivos=true";
   try {
     var res  = await fetch(url);
     var text = await res.text();
@@ -261,13 +282,15 @@ async function apiListarProductos() {
   return null;  // null = falla; el caller decide si usar cache/fallback
 }
 
-async function apiGuardarProducto(categoria, producto, min, max) {
+// punto puede ser "Centro"|"Primavera"|"CF"|"Todos"
+async function apiGuardarProducto(categoria, producto, punto, min, max) {
   var url = DEFAULT_APPS_SCRIPT_URL
     + "?action=guardarProducto"
     + "&categoria=" + encodeURIComponent(categoria)
     + "&producto="  + encodeURIComponent(producto)
-    + "&min=" + encodeURIComponent(String(min))
-    + "&max=" + encodeURIComponent(String(max));
+    + "&punto="     + encodeURIComponent(punto)
+    + "&min="       + encodeURIComponent(String(min))
+    + "&max="       + encodeURIComponent(String(max));
   try {
     var res  = await fetch(url);
     var text = await res.text();
@@ -278,14 +301,17 @@ async function apiGuardarProducto(categoria, producto, min, max) {
   }
 }
 
-async function apiActualizarProducto(producto, cambios) {
-  // cambios: { min?, max?, activo? }
+// Actualiza una fila puntual: clave compuesta (producto, punto). punto requerido.
+// cambios: { min?, max?, activo?, categoria? }
+async function apiActualizarProducto(producto, punto, cambios) {
   var url = DEFAULT_APPS_SCRIPT_URL
     + "?action=actualizarProducto"
-    + "&producto=" + encodeURIComponent(producto);
-  if (cambios.min    != null) url += "&min="    + encodeURIComponent(String(cambios.min));
-  if (cambios.max    != null) url += "&max="    + encodeURIComponent(String(cambios.max));
-  if (cambios.activo != null) url += "&activo=" + encodeURIComponent(String(cambios.activo));
+    + "&producto=" + encodeURIComponent(producto)
+    + "&punto="    + encodeURIComponent(punto);
+  if (cambios.min       != null) url += "&min="       + encodeURIComponent(String(cambios.min));
+  if (cambios.max       != null) url += "&max="       + encodeURIComponent(String(cambios.max));
+  if (cambios.activo    != null) url += "&activo="    + encodeURIComponent(String(cambios.activo));
+  if (cambios.categoria != null) url += "&categoria=" + encodeURIComponent(cambios.categoria);
   try {
     var res  = await fetch(url);
     var text = await res.text();
@@ -296,16 +322,35 @@ async function apiActualizarProducto(producto, cambios) {
   }
 }
 
-async function apiEliminarProducto(producto) {
+// Soft delete por (producto, punto). punto puede ser "Todos" para inactivar en los 3.
+async function apiEliminarProducto(producto, punto) {
   var url = DEFAULT_APPS_SCRIPT_URL
     + "?action=eliminarProducto"
-    + "&producto=" + encodeURIComponent(producto);
+    + "&producto=" + encodeURIComponent(producto)
+    + "&punto="    + encodeURIComponent(punto);
   try {
     var res  = await fetch(url);
     var text = await res.text();
     return JSON.parse(text);
   } catch (e) {
     console.error("apiEliminarProducto:", e);
+    return { success: false, error: String(e) };
+  }
+}
+
+// Anula un cierre (soft: marca anulado:true en Datos). El punto vuelve a aparecer
+// como Pendiente en estadoCierres y permite rehacer el cierre.
+async function apiAnularCierre(fecha, punto) {
+  var url = DEFAULT_APPS_SCRIPT_URL
+    + "?action=anularCierre"
+    + "&fecha=" + encodeURIComponent(fecha)
+    + "&punto=" + encodeURIComponent(punto);
+  try {
+    var res  = await fetch(url);
+    var text = await res.text();
+    return JSON.parse(text);
+  } catch (e) {
+    console.error("apiAnularCierre:", e);
     return { success: false, error: String(e) };
   }
 }
@@ -437,25 +482,41 @@ export default function NossaCafe() {
   // ── Productos: fuente de verdad es la hoja PRODUCTOS de Sheets.
   //    En boot intentamos cache de localStorage (rapido), luego sobreescribimos con Sheets.
   //    Si Sheets falla y no hay cache, usamos PRODUCTOS_FALLBACK.
+  //    Cache key: v2 porque el shape cambio (ahora incluye `punto`).
   var [productos, setProductos]         = useState(function () {
-    var cache = lsGet("nossa_productos_v1");
-    if (cache && Array.isArray(cache) && cache.length > 0) return cache;
+    var cache = lsGet("nossa_productos_v2");
+    if (cache && Array.isArray(cache) && cache.length > 0 && cache[0].punto) return cache;
     return PRODUCTOS_FALLBACK;
   });
   var [productosLoading, setProductosLoading] = useState(false);
 
   // ── Estado de edicion en el panel Admin Min/Max
-  var [editProd, setEditProd]           = useState(null);   // nombre del producto en edicion (null = ninguno)
+  // Clave compuesta: (producto, punto). null = nadie editando.
+  var [editProd, setEditProd]           = useState(null);
+  var [editPunto, setEditPunto]         = useState(null);
   var [eMin, setEMin]                   = useState("");
   var [eMax, setEMax]                   = useState("");
   var [savingProd, setSavingProd]       = useState(false);
+
+  // ── Selector de punto en Min/Max admin + filtro inactivos
+  var [adminPunto, setAdminPunto]       = useState("Centro");   // qué punto se ve
+  var [mostrarInactivos, setMostrarInactivos] = useState(false);
 
   // ── Estado del formulario "Anadir producto"
   var [adding, setAdding]               = useState(false);
   var [aCat,  setACat]                  = useState("pasteleria");
   var [aName, setAName]                 = useState("");
+  var [aPunto, setAPunto]               = useState("Todos");    // sentinel "Todos" => 3 filas
   var [aMin,  setAMin]                  = useState("");
   var [aMax,  setAMax]                  = useState("");
+
+  // ── Estado de "Corregir cierres" (admin)
+  var [corregirFecha, setCorregirFecha]     = useState(fechaHoy);
+  var [corregirPunto, setCorregirPunto]     = useState("Centro");
+  var [corregirCierre, setCorregirCierre]   = useState(null);   // {found, anulado, datos, fecha, punto, timestamp}
+  var [corregirLoading, setCorregirLoading] = useState(false);
+  var [corregirMsg, setCorregirMsg]         = useState("");
+  var [corregirMsgOk, setCorregirMsgOk]     = useState(false);
 
   var [despacho, setDespacho]           = useState(function () { return lsGet("nossa_despacho_v2") || {}; });
 
@@ -491,13 +552,19 @@ export default function NossaCafe() {
   }
 
   // ── Productos: carga desde Sheets, actualiza cache ─────────────────────────
-  async function cargarProductos() {
+  // Por defecto solo activos (lo que necesita el flujo de cierre).
+  // Cuando admin muestra inactivos, se llama con incluirInactivos=true (sin cache).
+  async function cargarProductos(opts) {
+    var o = opts || {};
     setProductosLoading(true);
     try {
-      var arr = await apiListarProductos();
+      var arr = await apiListarProductos({ incluirInactivos: !!o.incluirInactivos });
       if (arr && arr.length > 0) {
         setProductos(arr);
-        lsSet("nossa_productos_v1", arr);
+        // Solo cacheamos cuando son activos solos (lo que se usa para cierres).
+        if (!o.incluirInactivos) {
+          lsSet("nossa_productos_v2", arr);
+        }
       } else {
         console.warn("listarProductos vacio o null. Manteniendo cache/fallback.");
       }
@@ -573,11 +640,68 @@ export default function NossaCafe() {
   }, [screen, fechaObrador]);
 
   // Recargar productos al entrar al panel admin (fuente de verdad fresca)
+  // Si mostrarInactivos cambia, recargamos con/sin inactivos.
   useEffect(function () {
     if (screen !== "admin") return;
-    cargarProductos();
+    cargarProductos({ incluirInactivos: mostrarInactivos });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [screen]);
+  }, [screen, mostrarInactivos]);
+
+  // ── Corregir cierres: buscar / anular ──────────────────────────────────────
+  async function buscarCierreParaCorregir() {
+    setCorregirLoading(true);
+    setCorregirMsg("");
+    setCorregirCierre(null);
+    try {
+      // Pedimos incluirAnulados para que el admin pueda ver tambien los ya anulados
+      var url = DEFAULT_APPS_SCRIPT_URL
+        + "?action=obtenerCierre"
+        + "&fecha=" + encodeURIComponent(corregirFecha)
+        + "&punto=" + encodeURIComponent(corregirPunto)
+        + "&incluirAnulados=true";
+      var res  = await fetch(url);
+      var text = await res.text();
+      var data = JSON.parse(text);
+      if (data && data.success) {
+        setCorregirCierre(data);
+        if (!data.found) {
+          setCorregirMsg("No hay cierre para esa fecha y punto.");
+          setCorregirMsgOk(false);
+        }
+      } else {
+        setCorregirMsg("Error: " + (data.error || "respuesta inesperada"));
+        setCorregirMsgOk(false);
+      }
+    } catch (e) {
+      console.error("buscarCierreParaCorregir:", e);
+      setCorregirMsg("Error de red consultando el cierre.");
+      setCorregirMsgOk(false);
+    }
+    setCorregirLoading(false);
+  }
+
+  async function anularCierreActual() {
+    if (!corregirCierre || !corregirCierre.found) return;
+    if (corregirCierre.datos && corregirCierre.datos.anulado) {
+      setCorregirMsg("Este cierre ya estaba anulado.");
+      setCorregirMsgOk(false);
+      return;
+    }
+    if (!confirm("Anular cierre de " + corregirPunto + " del " + fechaDisplay(corregirFecha) + "?\n\nEl punto volvera a aparecer como Pendiente y podra rehacer el cierre.\n\nNo se borra el historial.")) return;
+    setCorregirLoading(true);
+    var r = await apiAnularCierre(corregirFecha, corregirPunto);
+    setCorregirLoading(false);
+    if (r && r.success) {
+      setCorregirMsg("Cierre anulado. El punto puede realizar el cierre nuevamente.");
+      setCorregirMsgOk(true);
+      // Refrescar el cierre mostrado y el estadoCierres
+      buscarCierreParaCorregir();
+      recargar();
+    } else {
+      setCorregirMsg("Error: " + ((r && r.error) || "no se pudo anular"));
+      setCorregirMsgOk(false);
+    }
+  }
 
   // ── Productos derivados (memoizados) ───────────────────────────────────────
   // Productos activos solamente, agrupados por categoria, en el orden de CATS_ORDER
@@ -586,11 +710,13 @@ export default function NossaCafe() {
 
   // ── Categorías ──────────────────────────────────────────────────────────────
   // Construye las categorias dinamicamente a partir de los productos cargados.
-  // Solo incluye productos activos. Filtra categorias vacias y categorias soloEn.
+  // FILTRA por punto: cada producto puede tener min/max diferente segun el punto.
+  // Solo incluye productos activos para ESE punto. Filtra categorias vacias y soloEn.
   function buildCats(pt) {
-    // Agrupar productos activos por categoria
+    // Agrupar productos activos del punto seleccionado por categoria
     var grouped = {};
     productosActivos.forEach(function (p) {
+      if (p.punto !== pt) return;  // filtra por punto
       if (!grouped[p.categoria]) grouped[p.categoria] = [];
       grouped[p.categoria].push({ nombre: p.producto, min: Number(p.min) || 0, max: Number(p.max) || 0 });
     });
@@ -1063,7 +1189,7 @@ export default function NossaCafe() {
   // PANTALLA: ADMIN
   // ════════════════════════════════════════════════════════
   if (screen === "admin") {
-    var adminTabs = [["cierres", "Cierres"], ["minmax", "Min/Max"]];
+    var adminTabs = [["cierres", "Cierres"], ["minmax", "Min/Max"], ["corregir", "Corregir"]];
     return (
       <div style={S.page}>
         <div style={{ ...S.card, padding: 0, overflow: "hidden" }}>
@@ -1094,15 +1220,34 @@ export default function NossaCafe() {
             )}
             {adminTab === "minmax" && (
               <div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                   <div style={{ fontWeight: "bold", fontSize: 14, color: "#2D3748" }}>
                     Productos {productosLoading ? <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: "normal" }}>cargando...</span> : null}
                   </div>
                   <button
-                    onClick={function () { cargarProductos(); }}
+                    onClick={function () { cargarProductos({ incluirInactivos: mostrarInactivos }); }}
                     style={{ background: "#EDF2F7", border: "none", padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontFamily: "Georgia, serif" }}
                   >Actualizar</button>
                 </div>
+
+                {/* Selector de punto */}
+                <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                  {PUNTOS.map(function (p) {
+                    var sel = adminPunto === p;
+                    return (
+                      <button key={p} onClick={function () { setAdminPunto(p); setEditProd(null); setEditPunto(null); }}
+                        style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: "1.5px solid " + (sel ? "#7C5C3B" : "#E2E8F0"), background: sel ? "#7C5C3B" : "#fff", color: sel ? "#fff" : "#4A5568", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}>
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Toggle mostrar inactivos */}
+                <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontSize: 12, color: "#4A5568", cursor: "pointer" }}>
+                  <input type="checkbox" checked={mostrarInactivos} onChange={function (e) { setMostrarInactivos(e.target.checked); }} />
+                  Mostrar productos inactivos
+                </label>
 
                 {/* Boton: Anadir producto */}
                 {!adding ? (
@@ -1111,6 +1256,7 @@ export default function NossaCafe() {
                       setAdding(true);
                       setACat("pasteleria");
                       setAName("");
+                      setAPunto("Todos");
                       setAMin("");
                       setAMax("");
                     }}
@@ -1121,118 +1267,135 @@ export default function NossaCafe() {
                     <div style={{ fontWeight: "bold", fontSize: 12, color: "#7C5C3B", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Nuevo producto</div>
 
                     <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Categoria</div>
-                    <select
-                      value={aCat}
-                      onChange={function (e) { setACat(e.target.value); }}
-                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}
-                    >
-                      {CATS_ORDER.map(function (id) {
-                        return <option key={id} value={id}>{CATS_META[id].nombre}</option>;
-                      })}
+                    <select value={aCat} onChange={function (e) { setACat(e.target.value); }}
+                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}>
+                      {CATS_ORDER.map(function (id) { return <option key={id} value={id}>{CATS_META[id].nombre}</option>; })}
                     </select>
 
                     <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Nombre</div>
-                    <input
-                      type="text"
-                      value={aName}
-                      onChange={function (e) { setAName(e.target.value); }}
-                      placeholder="Ej: Croissant chocolate"
-                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", boxSizing: "border-box" }}
-                    />
+                    <input type="text" value={aName} onChange={function (e) { setAName(e.target.value); }} placeholder="Ej: Croissant chocolate"
+                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
+
+                    <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Punto</div>
+                    <select value={aPunto} onChange={function (e) { setAPunto(e.target.value); }}
+                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}>
+                      <option value="Todos">Todos los puntos (crea 3 filas)</option>
+                      <option value="Centro">Centro</option>
+                      <option value="Primavera">Primavera</option>
+                      <option value="CF">CF</option>
+                    </select>
 
                     <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Min</div>
-                        <input type="number" min="0" value={aMin} onChange={function (e) { setAMin(e.target.value); }} style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
+                        <input type="number" min="0" value={aMin} onChange={function (e) { setAMin(e.target.value); }}
+                          style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Max</div>
-                        <input type="number" min="0" value={aMax} onChange={function (e) { setAMax(e.target.value); }} style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
+                        <input type="number" min="0" value={aMax} onChange={function (e) { setAMax(e.target.value); }}
+                          style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
                       </div>
                     </div>
 
                     <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        disabled={savingProd}
+                      <button disabled={savingProd}
                         onClick={async function () {
                           var nombre = aName.trim();
-                          var min    = parseInt(aMin, 10);
-                          var max    = parseInt(aMax, 10);
-                          if (!nombre)            { alert("El nombre no puede estar vacio."); return; }
+                          var min = parseInt(aMin, 10);
+                          var max = parseInt(aMax, 10);
+                          if (!nombre)               { alert("El nombre no puede estar vacio."); return; }
                           if (isNaN(min) || min < 0) { alert("Min invalido."); return; }
                           if (isNaN(max) || max < 0) { alert("Max invalido."); return; }
-                          if (max < min)          { alert("Max debe ser >= Min."); return; }
+                          if (max < min)             { alert("Max debe ser >= Min."); return; }
                           setSavingProd(true);
-                          var r = await apiGuardarProducto(aCat, nombre, min, max);
+                          var r = await apiGuardarProducto(aCat, nombre, aPunto, min, max);
                           setSavingProd(false);
                           if (r && r.success && r.saved) {
                             setAdding(false);
-                            await cargarProductos();
+                            await cargarProductos({ incluirInactivos: mostrarInactivos });
                           } else {
                             alert("Error: " + ((r && r.error) || "no se pudo guardar"));
                           }
                         }}
                         style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#7C5C3B", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", opacity: savingProd ? 0.6 : 1 }}
                       >{savingProd ? "Guardando..." : "Guardar"}</button>
-                      <button
-                        onClick={function () { setAdding(false); }}
+                      <button onClick={function () { setAdding(false); }}
                         style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1.5px solid #CBD5E0", background: "#fff", color: "#4A5568", fontSize: 13, cursor: "pointer", fontFamily: "Georgia, serif" }}
                       >Cancelar</button>
                     </div>
                   </div>
                 )}
 
-                {/* Lista de productos por categoria */}
+                {/* Lista de productos del PUNTO seleccionado, agrupados por categoria */}
                 {CATS_ORDER.map(function (catId) {
                   var meta = CATS_META[catId];
                   if (!meta) return null;
-                  var prods = productos.filter(function (p) { return p.categoria === catId && p.activo; });
-                  if (prods.length === 0) return (
-                    <div key={catId} style={{ marginBottom: 16 }}>
-                      <div style={{ color: meta.color, fontWeight: "bold", fontSize: 12, margin: "0 0 6px" }}>{meta.nombre}</div>
-                      <div style={{ fontSize: 12, color: "#9CA3AF", fontStyle: "italic", padding: "8px 12px", background: "#FAFAFA", borderRadius: 8 }}>Sin productos en esta categoria</div>
-                    </div>
-                  );
+                  // soloEn: si la categoria es solo para un punto y estamos viendo otro, ocultarla
+                  if (meta.soloEn && meta.soloEn !== adminPunto) return null;
+                  var prods = productos.filter(function (p) {
+                    if (p.categoria !== catId) return false;
+                    if (p.punto !== adminPunto) return false;
+                    if (!mostrarInactivos && !p.activo) return false;
+                    return true;
+                  });
+                  if (prods.length === 0) return null;
                   return (
                     <div key={catId} style={{ marginBottom: 16 }}>
                       <div style={{ color: meta.color, fontWeight: "bold", fontSize: 12, margin: "0 0 6px" }}>{meta.nombre} ({prods.length})</div>
                       <div style={{ background: "#FAFAFA", borderRadius: 12, border: "1px solid #F1F5F9", overflow: "hidden" }}>
                         {prods.map(function (prod, i) {
-                          var editing = editProd === prod.producto;
+                          var editing = editProd === prod.producto && editPunto === prod.punto;
+                          var inactivo = !prod.activo;
                           return (
-                            <div key={prod.producto} style={{ padding: "10px 12px", borderBottom: i < prods.length - 1 ? "1px solid #F1F5F9" : "none" }}>
+                            <div key={prod.producto + "_" + prod.punto} style={{ padding: "10px 12px", borderBottom: i < prods.length - 1 ? "1px solid #F1F5F9" : "none", opacity: inactivo ? 0.55 : 1 }}>
                               {!editing ? (
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
-                                  <div style={{ flex: 1, fontSize: 13, color: "#2D3748" }}>{prod.producto}</div>
+                                  <div style={{ flex: 1, fontSize: 13, color: "#2D3748" }}>
+                                    {prod.producto}
+                                    {inactivo && <span style={{ fontSize: 10, marginLeft: 6, padding: "2px 6px", borderRadius: 6, background: "#FEE2E2", color: "#991B1B", fontWeight: "bold" }}>INACTIVO</span>}
+                                  </div>
                                   <span style={{ fontSize: 11, color: "#6B7280", background: "#F1F5F9", padding: "3px 8px", borderRadius: 20 }}>{prod.min} - {prod.max}</span>
-                                  <button
-                                    title="Editar"
-                                    onClick={function () { setEditProd(prod.producto); setEMin(String(prod.min)); setEMax(String(prod.max)); }}
-                                    style={{ background: "#EDF2F7", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif" }}
-                                  >Editar</button>
-                                  <button
-                                    title="Eliminar"
-                                    onClick={async function () {
-                                      if (!confirm("Eliminar \"" + prod.producto + "\"?\n\nQuedara inactivo y dejara de aparecer en cierres y Obrador. No se borra el historial.")) return;
-                                      setSavingProd(true);
-                                      var r = await apiEliminarProducto(prod.producto);
-                                      setSavingProd(false);
-                                      if (r && r.success) await cargarProductos();
-                                      else alert("Error: " + ((r && r.error) || "no se pudo eliminar"));
-                                    }}
-                                    style={{ background: "#FEE2E2", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif", color: "#991B1B" }}
-                                  >X</button>
+                                  {inactivo ? (
+                                    <button title="Reactivar"
+                                      onClick={async function () {
+                                        setSavingProd(true);
+                                        var r = await apiActualizarProducto(prod.producto, prod.punto, { activo: true });
+                                        setSavingProd(false);
+                                        if (r && r.success) await cargarProductos({ incluirInactivos: mostrarInactivos });
+                                        else alert("Error: " + ((r && r.error) || "no se pudo reactivar"));
+                                      }}
+                                      style={{ background: "#DCFCE7", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif", color: "#15803D" }}
+                                    >Reactivar</button>
+                                  ) : (
+                                    <>
+                                      <button title="Editar"
+                                        onClick={function () { setEditProd(prod.producto); setEditPunto(prod.punto); setEMin(String(prod.min)); setEMax(String(prod.max)); }}
+                                        style={{ background: "#EDF2F7", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif" }}
+                                      >Editar</button>
+                                      <button title="Eliminar"
+                                        onClick={async function () {
+                                          if (!confirm("Eliminar \"" + prod.producto + "\" en " + prod.punto + "?\n\nQuedara inactivo y dejara de aparecer en cierres y Obrador. No se borra el historial.")) return;
+                                          setSavingProd(true);
+                                          var r = await apiEliminarProducto(prod.producto, prod.punto);
+                                          setSavingProd(false);
+                                          if (r && r.success) await cargarProductos({ incluirInactivos: mostrarInactivos });
+                                          else alert("Error: " + ((r && r.error) || "no se pudo eliminar"));
+                                        }}
+                                        style={{ background: "#FEE2E2", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif", color: "#991B1B" }}
+                                      >X</button>
+                                    </>
+                                  )}
                                 </div>
                               ) : (
                                 <div>
-                                  <div style={{ fontSize: 13, color: "#2D3748", fontWeight: "bold", marginBottom: 6 }}>{prod.producto}</div>
+                                  <div style={{ fontSize: 13, color: "#2D3748", fontWeight: "bold", marginBottom: 6 }}>{prod.producto} ({prod.punto})</div>
                                   <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                                     <span style={{ fontSize: 11, color: "#6B7280" }}>Min</span>
                                     <input type="number" min="0" value={eMin} onChange={function (e) { setEMin(e.target.value); }} style={{ width: 50, padding: "6px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 14, textAlign: "center" }} />
                                     <span style={{ fontSize: 11, color: "#6B7280" }}>Max</span>
                                     <input type="number" min="0" value={eMax} onChange={function (e) { setEMax(e.target.value); }} style={{ width: 50, padding: "6px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 14, textAlign: "center" }} />
-                                    <button
-                                      disabled={savingProd}
+                                    <button disabled={savingProd}
                                       onClick={async function () {
                                         var min = parseInt(eMin, 10);
                                         var max = parseInt(eMax, 10);
@@ -1240,19 +1403,18 @@ export default function NossaCafe() {
                                         if (isNaN(max) || max < 0) { alert("Max invalido."); return; }
                                         if (max < min) { alert("Max debe ser >= Min."); return; }
                                         setSavingProd(true);
-                                        var r = await apiActualizarProducto(prod.producto, { min: min, max: max });
+                                        var r = await apiActualizarProducto(prod.producto, prod.punto, { min: min, max: max });
                                         setSavingProd(false);
                                         if (r && r.success) {
-                                          setEditProd(null);
-                                          await cargarProductos();
+                                          setEditProd(null); setEditPunto(null);
+                                          await cargarProductos({ incluirInactivos: mostrarInactivos });
                                         } else {
                                           alert("Error: " + ((r && r.error) || "no se pudo actualizar"));
                                         }
                                       }}
                                       style={{ background: "#38A169", color: "#fff", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: "bold", opacity: savingProd ? 0.6 : 1 }}
                                     >Guardar</button>
-                                    <button
-                                      onClick={function () { setEditProd(null); }}
+                                    <button onClick={function () { setEditProd(null); setEditPunto(null); }}
                                       style={{ background: "#E2E8F0", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif" }}
                                     >Cancelar</button>
                                   </div>
@@ -1268,6 +1430,103 @@ export default function NossaCafe() {
 
                 <div style={{ marginTop: 12, padding: 10, background: "#F0FFF4", borderRadius: 10, fontSize: 11, color: "#15803D" }}>
                   Cambios persisten en la hoja PRODUCTOS de Google Sheets.
+                </div>
+              </div>
+            )}
+
+            {adminTab === "corregir" && (
+              <div>
+                <div style={{ fontWeight: "bold", fontSize: 14, color: "#2D3748", marginBottom: 8 }}>Corregir cierres</div>
+                <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 12, fontStyle: "italic" }}>
+                  Anular un cierre lo deja como "Pendiente" y permite rehacerlo. No borra historial.
+                </div>
+
+                {/* Selector fecha */}
+                <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Fecha</div>
+                <input
+                  type="date"
+                  value={corregirFecha}
+                  onChange={function (e) { setCorregirFecha(e.target.value); setCorregirCierre(null); setCorregirMsg(""); }}
+                  style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", boxSizing: "border-box" }}
+                />
+
+                {/* Selector punto */}
+                <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Punto</div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                  {PUNTOS.map(function (p) {
+                    var sel = corregirPunto === p;
+                    return (
+                      <button key={p} onClick={function () { setCorregirPunto(p); setCorregirCierre(null); setCorregirMsg(""); }}
+                        style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: "1.5px solid " + (sel ? "#7C5C3B" : "#E2E8F0"), background: sel ? "#7C5C3B" : "#fff", color: sel ? "#fff" : "#4A5568", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}>
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  disabled={corregirLoading}
+                  onClick={buscarCierreParaCorregir}
+                  style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: "#4A5568", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", opacity: corregirLoading ? 0.6 : 1, marginBottom: 12 }}
+                >{corregirLoading ? "Buscando..." : "Buscar cierre"}</button>
+
+                {/* Mensaje */}
+                {corregirMsg && (
+                  <div style={{ padding: 10, background: corregirMsgOk ? "#F0FFF4" : "#FEF3C7", border: "1px solid " + (corregirMsgOk ? "#38A169" : "#F59E0B"), borderRadius: 10, color: corregirMsgOk ? "#15803D" : "#92400E", fontSize: 12, marginBottom: 12 }}>
+                    {corregirMsg}
+                  </div>
+                )}
+
+                {/* Resumen del cierre */}
+                {corregirCierre && corregirCierre.found && (
+                  <div style={{ background: "#fff", border: "2px solid " + (corregirCierre.datos && corregirCierre.datos.anulado ? "#FED7AA" : "#7C5C3B"), borderRadius: 12, padding: 14, marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                      <div style={{ fontSize: 14, fontWeight: "bold", color: "#2D3748" }}>{corregirCierre.punto} - {fechaDisplay(corregirCierre.fecha)}</div>
+                      {corregirCierre.datos && corregirCierre.datos.anulado
+                        ? <span style={{ fontSize: 10, fontWeight: "bold", color: "#9A3412", background: "#FED7AA", padding: "3px 10px", borderRadius: 20 }}>ANULADO</span>
+                        : <span style={{ fontSize: 10, fontWeight: "bold", color: "#15803D", background: "#DCFCE7", padding: "3px 10px", borderRadius: 20 }}>ACTIVO</span>}
+                    </div>
+                    {corregirCierre.datos && (
+                      <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 8 }}>
+                        {(corregirCierre.datos.h || corregirCierre.datos.hora || "—")} - {(corregirCierre.datos.r || corregirCierre.datos.responsable || "—")}
+                        {corregirCierre.datos.anulado && corregirCierre.datos.anuladoEn && (
+                          <div style={{ fontSize: 10, marginTop: 4, color: "#9A3412" }}>
+                            Anulado: {String(corregirCierre.datos.anuladoEn).slice(0, 19).replace("T", " ")}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Resumen de items */}
+                    {(function () {
+                      var items = normalizarItemsCierre(corregirCierre.datos);
+                      if (items.length === 0) return <div style={{ fontSize: 12, color: "#6B7280", fontStyle: "italic" }}>Sin items pendientes en este cierre</div>;
+                      return (
+                        <div style={{ background: "#FAFAFA", borderRadius: 8, padding: "8px 12px", maxHeight: 200, overflowY: "auto" }}>
+                          {items.map(function (it, i) {
+                            return (
+                              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: i < items.length - 1 ? "1px solid #F0F0F0" : "none" }}>
+                                <span style={{ fontSize: 12, color: "#2D3748" }}>{it.nombre}</span>
+                                <span style={{ fontSize: 12, fontWeight: "bold", color: "#7C5C3B" }}>{it.cantidad} und</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+
+                    {/* Boton anular - solo si no esta ya anulado */}
+                    {!(corregirCierre.datos && corregirCierre.datos.anulado) && (
+                      <button
+                        disabled={corregirLoading}
+                        onClick={anularCierreActual}
+                        style={{ width: "100%", marginTop: 12, padding: "11px", borderRadius: 10, border: "none", background: "#DC2626", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", opacity: corregirLoading ? 0.6 : 1 }}
+                      >Anular cierre</button>
+                    )}
+                  </div>
+                )}
+
+                <div style={{ marginTop: 8, padding: 10, background: "#FFF7ED", borderRadius: 10, fontSize: 11, color: "#9A3412" }}>
+                  Despues de anular, el punto puede volver a hacer el cierre desde la pantalla principal. estadoCierres ignora cierres anulados.
                 </div>
               </div>
             )}
