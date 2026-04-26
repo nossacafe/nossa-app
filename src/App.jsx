@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── URL DE APPS SCRIPT ───────────────────────────────────────────────────────
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/REEMPLAZA_CON_TU_URL/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxs7uys-3iaRXEzYTBJLJRX2KIdjiixphwqSxUDvlyJykmrZOL2hNXGqq_I7KLUvCb0Q/exec";
 const ADMIN_PASSWORD  = "nossa2024";
 const PUNTOS          = ["Centro", "Primavera", "CF"];
 
