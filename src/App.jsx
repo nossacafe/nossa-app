@@ -887,11 +887,14 @@ export default function NossaCafe() {
 console.log("SHEETS URL:", sheetsUrl);
 alert("URL usada: " + sheetsUrl);
       // No Content-Type: application/json para evitar preflight CORS con Apps Script
-      var res = await fetch(sheetsUrl, {
-  method: "POST",
-  body: JSON.stringify(payload),
+      const params = new URLSearchParams({
+  action: "guardarCierre",
+  fecha: payload.fecha,
+  punto: payload.punto,
+  datos: JSON.stringify(payload.datos)
 });
 
+const res = await fetch(`${sheetsUrl}?${params.toString()}`);
       if (!res.ok) {
         var errText = await res.text().catch(function () { return res.status; });
         console.error("POST fallido:", res.status, errText);
