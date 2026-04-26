@@ -167,6 +167,7 @@ var STYLES = {
 
 // ─── PRODUCT ROW ──────────────────────────────────────────────────────────────
 function ProductRow({ prod, idx, allProds, getStock, getPedir, setStock, setBlur, adjust, flashKey, inputRefs, freshInput }) {
+  const s = STYLES;
   const val = getStock(prod.nombre);
   const pedir = getPedir(prod);
   const filled = val !== "" && val !== undefined;
