@@ -6,7 +6,7 @@ const ADMIN_PASSWORD = "nossa2024";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 // Fallback URL — used only if getConfig fails AND localStorage has no cache
-const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxs7uys-3iaRXEzYTBJLJRX2KIdjiixphwqSxUDvlyJykmrZOL2hNXGqq_I7KLUvCb0Q/exec";
+const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxys7uys-3iaRXEzYTBJLJRX2KldjijixphwqSxUDvlyJykmrZOL2hNXGqq_I7KLuvCb0Q/exec";
 
 const CATEGORIAS = [
   {
@@ -151,7 +151,7 @@ async function dbSet(k, v) {
 }
 
 // ─── STYLES ───────────────────────────────────────────────────────────────────
-var STYLES = {
+const S = {
   page: { minHeight: "100vh", background: "#F2EDE8", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12, fontFamily: "Georgia, serif" },
   card: { width: "100%", maxWidth: 480, background: "#fff", borderRadius: 20, boxShadow: "0 6px 40px rgba(0,0,0,0.12)", overflow: "hidden" },
   hero: { background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "36px 24px 28px", textAlign: "center", color: "#fff" },
@@ -165,10 +165,8 @@ var STYLES = {
   tab: { padding: "12px 10px", border: "none", background: "transparent", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "Georgia, serif" },
 };
 
-const S = STYLES;
 // ─── PRODUCT ROW ──────────────────────────────────────────────────────────────
 function ProductRow({ prod, idx, allProds, getStock, getPedir, setStock, setBlur, adjust, flashKey, inputRefs, freshInput }) {
-  const s = STYLES;
   const val = getStock(prod.nombre);
   const pedir = getPedir(prod);
   const filled = val !== "" && val !== undefined;
@@ -655,7 +653,6 @@ function AdminView({ cierres, minMax, getMM, saveMinMax, sheetsUrl, setSheetsUrl
 
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 export default function NossaCafe() {
-  const s = STYLES;
   const [screen, setScreen]           = useState("inicio");
   const [punto, setPunto]             = useState(null);
   const [responsable, setResponsable] = useState("");
@@ -845,109 +842,122 @@ export default function NossaCafe() {
   }
 
   async function cargarCierresDesdeSheets(url) {
-  if (!url) return;
+    if (!url) return;
 
-  try {
-    var fecha = new Date().toISOString().slice(0, 10);
-    var res = await fetch(url + "?action=estadoCierres&fecha=" + fecha);
-    var data = await res.json();
+    try {
+      var fecha = new Date().toISOString().slice(0, 10);
+      var res = await fetch(url + "?action=estadoCierres&fecha=" + fecha);
+      var data = await res.json();
 
-    if (data && data.cierres) {
-      var lista = [];
+      if (Array.isArray(data)) {
+        setCierres(data);
+        return;
+      }
 
-      Object.keys(data.cierres).forEach(function (p) {
-        if (data.cierres[p]) {
-          lista.push({
-            id: p + "-" + fecha,
-            fecha: new Date().toISOString(),
-            hora: "--",
-            punto: p,
-            responsable: "",
-            stocks: {},
-            skipped: {},
-            pedido: []
-          });
-        }
-      });
+      if (data && data.cierres && !Array.isArray(data.cierres)) {
+        var lista = [];
 
-      setCierres(lista);
-    } else {
+        Object.keys(data.cierres).forEach(function (p) {
+          if (data.cierres[p]) {
+            lista.push({
+              id: p + "-" + fecha,
+              fecha: new Date().toISOString(),
+              hora: "--",
+              punto: p,
+              responsable: "",
+              stocks: {},
+              skipped: {},
+              pedido: []
+            });
+          }
+        });
+
+        setCierres(lista);
+        return;
+      }
+
+      if (data && Array.isArray(data.cierres)) {
+        setCierres(data.cierres);
+        return;
+      }
+
+      setCierres([]);
+    } catch (e) {
+      console.warn("No se pudo cargar estado desde Sheets:", e);
       setCierres([]);
     }
-  } catch (e) {
-    console.warn("No se pudo cargar estado desde Sheets:", e);
-    setCierres([]);
   }
-}
+
   async function syncToSheets(cierre) {
-  var url = sheetsUrl || DEFAULT_APPS_SCRIPT_URL;
+    var url = sheetsUrl || DEFAULT_APPS_SCRIPT_URL;
 
-  if (!url) {
-    alert("No hay URL de Apps Script configurada.");
-    return;
-  }
-
-  try {
-    setSyncStatus("syncing");
-
-    var fecha = new Date().toISOString().slice(0, 10);
-
-    var productos = {};
-    if (cierre.stocks) {
-      Object.keys(cierre.stocks).forEach(function (k) {
-        if (cierre.stocks[k] !== undefined) productos[k] = cierre.stocks[k];
-      });
+    if (!url) {
+      alert("No hay URL de Apps Script configurada.");
+      return false;
     }
 
-    var datos = {
-      hora: cierre.hora || "",
-      responsable: cierre.responsable || "",
-      pedido: cierre.pedido || [],
-      productos: productos
-    };
-
-    var params = new URLSearchParams({
-      action: "guardarCierre",
-      fecha: fecha,
-      punto: cierre.punto,
-      datos: JSON.stringify(datos)
-    });
-
-    var saveUrl = url + "?" + params.toString();
-
-    console.log("GUARDANDO EN:", saveUrl);
-
-    var res = await fetch(saveUrl);
-    var text = await res.text();
-
-    console.log("RESPUESTA GUARDAR:", text);
-
-    var data = {};
     try {
-      data = JSON.parse(text);
+      setSyncStatus("syncing");
+
+      var fecha = new Date().toISOString().slice(0, 10);
+
+      var productos = {};
+      if (cierre.stocks) {
+        Object.keys(cierre.stocks).forEach(function (k) {
+          if (cierre.stocks[k] !== undefined) productos[k] = cierre.stocks[k];
+        });
+      }
+
+      var datos = {
+        hora: cierre.hora || "",
+        responsable: cierre.responsable || "",
+        pedido: cierre.pedido || [],
+        productos: productos,
+        skipped: cierre.skipped || {},
+        esCorreccion: !!cierre.esCorreccion,
+        nota: cierre.nota || ""
+      };
+
+      var params = new URLSearchParams({
+        action: "guardarCierre",
+        fecha: fecha,
+        punto: cierre.punto,
+        datos: JSON.stringify(datos)
+      });
+
+      var saveUrl = url + "?" + params.toString();
+      console.log("GUARDANDO EN:", saveUrl);
+
+      var res = await fetch(saveUrl);
+      var text = await res.text();
+      console.log("RESPUESTA GUARDAR:", text);
+
+      var data = {};
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        alert("Apps Script respondió algo inválido:\n" + text);
+        setSyncStatus("error");
+        return false;
+      }
+
+      if (!data.success) {
+        alert("No se guardó el cierre:\n" + (data.error || "Error desconocido"));
+        setSyncStatus("error");
+        return false;
+      }
+
+      await cargarCierresDesdeSheets(url);
+      setSyncStatus("ok");
+      setTimeout(function () { setSyncStatus(""); }, 3000);
+      return true;
     } catch (e) {
-      alert("Apps Script respondió algo inválido:\n" + text);
+      console.error("Error guardando cierre:", e);
+      alert("Error guardando cierre:\n" + e.message);
       setSyncStatus("error");
-      return;
+      return false;
     }
-
-    if (!data.success) {
-      alert("No se guardó el cierre:\n" + (data.error || "Error desconocido"));
-      setSyncStatus("error");
-      return;
-    }
-
-    await cargarCierresDesdeSheets(url);
-
-    setSyncStatus("ok");
-    alert("Cierre guardado correctamente");
-
-  } catch (e) {
-    console.error("Error guardando cierre:", e);
-    alert("Error guardando cierre:\n" + e.message);
-    setSyncStatus("error");
   }
-}
 
   var todayStr = new Date().toLocaleDateString("es-CO");
 
@@ -977,7 +987,8 @@ export default function NossaCafe() {
     } else {
       updated = [cierre].concat(cierres).slice(0, 200);
     }
-    await syncToSheets(cierre);
+    var guardado = await syncToSheets(cierre);
+    if (!guardado) return;
     setModoEdicion(false);
     setScreen("resumen");
   }
@@ -985,11 +996,10 @@ export default function NossaCafe() {
   async function submitCorreccion() {
     if (!corrProd.trim() || !corrCant) return;
     var corr = { id: Date.now(), fecha: new Date().toISOString(), hora: hora, punto: punto, responsable: responsable, esCorreccion: true, pedido: [{ cat: "Correccion", prod: corrProd.trim(), cantidad: parseInt(corrCant) || 0 }], nota: corrNota.trim() };
-   await syncToSheets(corr);
-setCorrProd("");
-setCorrCant("");
-setCorrNota("");
-setScreen("resumen");
+    var guardado = await syncToSheets(corr);
+    if (!guardado) return;
+    setCorrProd(""); setCorrCant(""); setCorrNota("");
+    setScreen("resumen");
   }
 
   function abrirEdicion(p) {
@@ -1194,15 +1204,7 @@ setScreen("resumen");
               <textarea style={{ width: "100%", borderRadius: 8, border: "1px solid #C6F6D5", padding: 10, fontSize: 11, color: "#2D3748", background: "#fff", resize: "none", fontFamily: "monospace", boxSizing: "border-box", lineHeight: 1.6 }} readOnly value={mensaje} rows={Math.min(14, mensaje.split("\n").length + 2)} />
               <button style={{ width: "100%", padding: 11, borderRadius: 10, border: "none", background: "#38A169", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", marginTop: 8 }} onClick={function () { if (navigator.clipboard) navigator.clipboard.writeText(mensaje); alert("Copiado!"); }}>Copiar</button>
             </div>
-            <button 
-  style={{ ...s.btn, background: "#4A5568" }} 
-  onClick={async () => {
-    reiniciar();
-    await cargarCierresDesdeSheets();
-  }}
->
-  Nuevo cierre
-</button>
+            <button style={{ ...S.btn, background: "#4A5568" }} onClick={async function () { reiniciar(); await cargarCierresDesdeSheets(sheetsUrl || DEFAULT_APPS_SCRIPT_URL); }}>Nuevo cierre</button>
           </div>
         </div>
       </div>
