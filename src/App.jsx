@@ -842,20 +842,40 @@ export default function NossaCafe() {
   }
 
   async function cargarCierresDesdeSheets(url) {
-    if (!url) return;
-    try {
-      var fecha = new Date().toISOString().slice(0, 10);
-      var res = await fetch(url + "?action=estadoCierres&fecha=" + fecha);
-      var data = await res.json();
-     if (data && data.cierres) {
-  const cierresObj = data.cierres;
+  if (!url) return;
 
-  const lista = Object.keys(cierresObj).map(function (p) {
-    return {
-      punto: p,
-      completo: cierresObj[p]
-    };
-  });
+  try {
+    var fecha = new Date().toISOString().slice(0, 10);
+    var res = await fetch(url + "?action=estadoCierres&fecha=" + fecha);
+    var data = await res.json();
+
+    if (data && data.cierres) {
+      var lista = [];
+
+      Object.keys(data.cierres).forEach(function (p) {
+        if (data.cierres[p]) {
+          lista.push({
+            id: p + "-" + fecha,
+            fecha: fecha,
+            hora: "--",
+            punto: p,
+            responsable: "",
+            stocks: {},
+            skipped: {},
+            pedido: []
+          });
+        }
+      });
+
+      setCierres(lista);
+    } else {
+      setCierres([]);
+    }
+  } catch (e) {
+    console.warn("No se pudo cargar estado desde Sheets:", e);
+    setCierres([]);
+  }
+}
 
   setCierres(lista);
 }
