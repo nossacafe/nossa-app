@@ -756,7 +756,7 @@ var confirmado = cierresEstado[puntoResumen];
           <div style={{ background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "36px 24px 20px", textAlign: "center", color: "#fff" }}>
             <div style={{ fontSize: 52 }}>{confirmado ? "✓" : syncStatus === "error" ? "!" : "..."}</div>
             <div style={{ fontSize: 22, fontWeight: "bold", color: "#F5E6D3" }}>
-              {confirmado ? (aPedir.length === 0 ? "Todo en orden!" : aPedir.length + " productos por pedir") : syncStatus === "error" ? "Error al guardar" : "Guardando..."}
+              {syncStatus === "syncing" ? "Guardando..." : syncStatus === "error" ? "Error al guardar" : (aPedir.length === 0 ? "Todo en orden!" : aPedir.length + " productos por pedir")}
             </div>
             <div style={{ fontSize: 13, color: "#C8A882", marginTop: 4 }}>{puntoResumen} - {hora} - {responsable || "--"}</div>
             {confirmado && <div style={{ color: "#C6F6D5", fontSize: 12, marginTop: 8 }}>Confirmado en Google Sheets</div>}
