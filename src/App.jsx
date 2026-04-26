@@ -877,9 +877,8 @@ export default function NossaCafe() {
   }
 }
 
-  setCierres(lista);
-}
-    } catch (e) {
+setCierres(lista);
+} catch (e) {
       console.warn("No se pudo cargar estado desde Sheets:", e);
     }
   }
