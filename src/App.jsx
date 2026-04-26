@@ -887,10 +887,9 @@ export default function NossaCafe() {
 
       // No Content-Type: application/json para evitar preflight CORS con Apps Script
       var res = await fetch(sheetsUrl, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(payload),
-      });
+  method: "POST",
+  body: JSON.stringify(payload),
+});
 
       if (!res.ok) {
         var errText = await res.text().catch(function () { return res.status; });
