@@ -4,6 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 const PUNTOS = ["Centro", "Primavera", "CF"];
 const ADMIN_PASSWORD = "nossa2024";
 
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+// Fallback URL — used only if getConfig fails AND localStorage has no cache
+const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/REEMPLAZA_CON_TU_URL/exec";
+
 const CATEGORIAS = [
   {
     id: "pasteleria",
@@ -678,14 +682,33 @@ export default function NossaCafe() {
     var now = new Date();
     setHora(now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0"));
     (async function () {
-      var c   = await dbGet("nossa_config")       || {};
       var mm  = await dbGet("nossa_minmax")       || {};
       var dep = await dbGet("nossa_obra_desp")    || { Centro: false, Primavera: false, CF: false };
       var cp  = await dbGet("nossa_custom_prods") || [];
-      var url = c.sheetsUrl || "";
-      setConfig(c); setMinMax(mm);
-      setSheetsUrl(url); setDespacho(dep); setCustomProds(cp);
-      if (url) await cargarCierresDesdeSheets(url);
+      setMinMax(mm); setDespacho(dep); setCustomProds(cp);
+
+      // ── Resolve Apps Script URL (centralized, not per-device) ──────────────
+      // Priority: 1) getConfig from Sheets  2) localStorage cache  3) DEFAULT
+      var urlFromSheets = null;
+      try {
+        var res = await fetch(DEFAULT_APPS_SCRIPT_URL + "?action=getConfig");
+        if (res.ok) {
+          var data = await res.json();
+          if (data && data.success && data.config && data.config.appsScriptUrl) {
+            urlFromSheets = data.config.appsScriptUrl;
+            await dbSet("nossa_url_cache", urlFromSheets); // cache it locally
+          }
+        }
+      } catch (e) {
+        console.warn("getConfig failed, using cache or default:", e);
+      }
+
+      var cachedUrl = await dbGet("nossa_url_cache");
+      var resolvedUrl = urlFromSheets || cachedUrl || DEFAULT_APPS_SCRIPT_URL;
+
+      setSheetsUrl(resolvedUrl);
+      setConfig({ sheetsUrl: resolvedUrl });
+      if (resolvedUrl) await cargarCierresDesdeSheets(resolvedUrl);
     })();
   }, []);
 
@@ -708,12 +731,22 @@ export default function NossaCafe() {
   }
 
   async function saveConfig(updates) {
-    var cfg = {};
-    Object.keys(config).forEach(function (k) { cfg[k] = config[k]; });
-    Object.keys(updates).forEach(function (k) { cfg[k] = updates[k]; });
-    await dbSet("nossa_config", cfg);
-    setConfig(cfg);
-    if (updates.sheetsUrl !== undefined) setSheetsUrl(updates.sheetsUrl);
+    var newUrl = updates.sheetsUrl;
+    if (newUrl) {
+      // Cache locally as fallback only
+      await dbSet("nossa_url_cache", newUrl);
+      // Push to Sheets so all devices pick it up via getConfig
+      try {
+        await fetch(newUrl, {
+          method: "POST",
+          body: JSON.stringify({ action: "actualizarConfig", config: { appsScriptUrl: newUrl } }),
+        });
+      } catch (e) {
+        console.warn("actualizarConfig failed:", e);
+      }
+      setSheetsUrl(newUrl);
+      setConfig({ sheetsUrl: newUrl });
+    }
   }
 
   function getCategorias() {
@@ -825,7 +858,10 @@ export default function NossaCafe() {
   }
 
   async function syncToSheets(cierre) {
-    if (!sheetsUrl) return;
+    if (!sheetsUrl) {
+      alert("No hay URL de Apps Script configurada. Ve al panel Admin.");
+      return;
+    }
     setSyncStatus("syncing");
     try {
       var fecha = new Date().toISOString().slice(0, 10);
@@ -846,17 +882,47 @@ export default function NossaCafe() {
           productos: productos,
         },
       };
-      await fetch(sheetsUrl, {
+
+      console.log("POST payload:", JSON.stringify(payload));
+
+      // No Content-Type: application/json para evitar preflight CORS con Apps Script
+      var res = await fetch(sheetsUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(payload),
       });
+
+      if (!res.ok) {
+        var errText = await res.text().catch(function () { return res.status; });
+        console.error("POST fallido:", res.status, errText);
+        alert("Error al guardar en Google Sheets: " + res.status + "\n" + errText);
+        setSyncStatus("error");
+        setTimeout(function () { setSyncStatus(""); }, 5000);
+        return;
+      }
+
+      var data = await res.json().catch(function () { return null; });
+      console.log("POST respuesta:", data);
+
+      if (data && data.success === false) {
+        var msg = data.error || "Apps Script devolvio success:false";
+        console.error("Apps Script error:", msg);
+        alert("Error desde Apps Script: " + msg);
+        setSyncStatus("error");
+        setTimeout(function () { setSyncStatus(""); }, 5000);
+        return;
+      }
+
       setSyncStatus("ok");
       setTimeout(function () { setSyncStatus(""); }, 3000);
+      // Re-fetch from Sheets to confirm state — no marcamos completo hasta que Sheets confirme
       await cargarCierresDesdeSheets(sheetsUrl);
+
     } catch (e) {
+      console.error("syncToSheets exception:", e);
+      alert("Error de red al conectar con Google Sheets:\n" + e.message);
       setSyncStatus("error");
-      setTimeout(function () { setSyncStatus(""); }, 4000);
+      setTimeout(function () { setSyncStatus(""); }, 5000);
     }
   }
 
