@@ -948,45 +948,7 @@ export default function NossaCafe() {
     setSyncStatus("error");
   }
 }
-      console.log("POST payload:", JSON.stringify(payload));
-console.log("SHEETS URL:", sheetsUrl);
-alert("URL usada: " + sheetsUrl);
-      // No Content-Type: application/json para evitar preflight CORS con Apps Script
-      const params = new URLSearchParams({
-  action: "guardarCierre",
-  fecha: payload.fecha,
-  punto: payload.punto,
-  datos: JSON.stringify(payload.datos)
-});
 
-const res = await fetch(`${sheetsUrl}?${params.toString()}`);
-      if (!res.ok) {
-        var errText = await res.text().catch(function () { return res.status; });
-        console.error("POST fallido:", res.status, errText);
-        alert("Error al guardar en Google Sheets: " + res.status + "\n" + errText);
-        setSyncStatus("error");
-        setTimeout(function () { setSyncStatus(""); }, 5000);
-        return;
-      }
-
-      var data = await res.json().catch(function () { return null; });
-      console.log("POST respuesta:", data);
-      if (data && data.success === true) {
-  alert("Guardado OK en Sheets");
-  await cargarCierresDesdeSheets(); // 🔥 refresca estado real
-}
-
-      if (data && data.success === false) {
-        var msg = data.error || "Apps Script devolvio success:false";
-        console.error("Apps Script error:", msg);
-        alert("Error desde Apps Script: " + msg);
-        setSyncStatus("error");
-        setTimeout(function () { setSyncStatus(""); }, 5000);
-        return;
-      }
-
-      setSyncStatus("ok");
-      setTimeout(function () { setSyncStatus(""); }, 3000);
       // Re-fetch from Sheets to confirm state — no marcamos completo hasta que Sheets confirme
       await cargarCierresDesdeSheets(sheetsUrl);
 
