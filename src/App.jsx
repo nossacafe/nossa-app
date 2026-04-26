@@ -949,14 +949,6 @@ export default function NossaCafe() {
   }
 }
 
-    } catch (e) {
-      console.error("syncToSheets exception:", e);
-      alert("Error de red al conectar con Google Sheets:\n" + e.message);
-      setSyncStatus("error");
-      setTimeout(function () { setSyncStatus(""); }, 5000);
-    }
-  }
-
   var todayStr = new Date().toLocaleDateString("es-CO");
 
   function getCierreHoy(p) {
