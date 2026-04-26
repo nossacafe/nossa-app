@@ -906,6 +906,10 @@ const res = await fetch(`${sheetsUrl}?${params.toString()}`);
 
       var data = await res.json().catch(function () { return null; });
       console.log("POST respuesta:", data);
+      if (data && data.success === true) {
+  alert("Guardado OK en Sheets");
+  await cargarCierresDesdeSheets(); // 🔥 refresca estado real
+}
 
       if (data && data.success === false) {
         var msg = data.error || "Apps Script devolvio success:false";
