@@ -6,7 +6,7 @@ const ADMIN_PASSWORD = "nossa2024";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 // Fallback URL — used only if getConfig fails AND localStorage has no cache
-const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxMlrkbFnnJJZzpe46TgLWP21MSjej3isjIRNNssH32wHuzB9T3kINWQxk6kbXh5anxtQ/exec";
+const DEFAULT_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyxs7uys-3iaRXEzYTBJLJRX2KIdjiixphwqSxUDvlyJykmrZOL2hNXGqq_I7KLUvCb0Q/exec";
 
 const CATEGORIAS = [
   {
