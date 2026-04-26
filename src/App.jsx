@@ -165,6 +165,7 @@ var STYLES = {
   tab: { padding: "12px 10px", border: "none", background: "transparent", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "Georgia, serif" },
 };
 
+const S = STYLES;
 // ─── PRODUCT ROW ──────────────────────────────────────────────────────────────
 function ProductRow({ prod, idx, allProds, getStock, getPedir, setStock, setBlur, adjust, flashKey, inputRefs, freshInput }) {
   const s = STYLES;
