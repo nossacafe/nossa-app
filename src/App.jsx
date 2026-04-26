@@ -748,7 +748,7 @@ export default function NossaCafe() {
       return c.productos.filter(function (p) { var v = getPedir(p); return typeof v === "number" && v > 0; });
     });
     var mensaje = generarMensaje();
-    var puntoResumen = punto || (cierres.length > 0 ? cierres[0].punto : "");
+    var puntoResumen = punto || "";
 var confirmado = cierresEstado[puntoResumen];
     return (
       <div style={ST.page}>
