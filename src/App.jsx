@@ -418,18 +418,10 @@ export default function NossaCafe() {
   var [adminErr, setAdminErr]           = useState(false);
   var [adminTab, setAdminTab]           = useState("cierres");
 
-  // ── Pedido manual: lista de items que la tienda pide al Obrador ─────────────
-  // Cada item: { producto, categoria, cantidad, nota }
-  var [pedidoManual, setPedidoManual]   = useState([]);
+  // ── Cantidades del pedido: map producto -> cantidad (number) ──────────────
+  // Inicia en {} (todo 0 implícito). Se resetea en cada nuevo cierre.
+  var [cantidades, setCantidades]       = useState({});
   var [observaciones, setObservaciones] = useState("");
-  // Form para agregar un item al pedido
-  var [pmProd, setPmProd]               = useState("");    // nombre del producto seleccionado
-  var [pmCant, setPmCant]               = useState("");    // cantidad
-  var [pmNota, setPmNota]               = useState("");    // nota opcional
-  // Indice del item siendo editado (-1 = ninguno)
-  var [pmEditIdx, setPmEditIdx]         = useState(-1);
-  // Filtro de categoria en el catalogo
-  var [pmCatFilter, setPmCatFilter]     = useState("todas");
 
   // ── Productos: fuente de verdad es la hoja PRODUCTOS de Sheets.
   //    En boot intentamos cache de localStorage (rapido), luego sobreescribimos con Sheets.
@@ -651,34 +643,9 @@ export default function NossaCafe() {
   var productosActivos = productos.filter(function (p) { return p.activo; });
   var productoACat     = buildProductoACat(productos);  // incluye inactivos para historico
 
-  // ── Categorías ──────────────────────────────────────────────────────────────
-  // Construye las categorias dinamicamente a partir de los productos cargados.
-  // FILTRA por punto: cada producto puede tener min/max diferente segun el punto.
-  // Solo incluye productos activos para ESE punto. Filtra categorias vacias y soloEn.
-  function buildCats(pt) {
-    // Agrupar productos activos del punto seleccionado por categoria
-    var grouped = {};
-    productosActivos.forEach(function (p) {
-      if (p.punto !== pt) return;  // filtra por punto
-      if (!grouped[p.categoria]) grouped[p.categoria] = [];
-      grouped[p.categoria].push({ nombre: p.producto, min: Number(p.min) || 0, max: Number(p.max) || 0 });
-    });
-
-    return CATS_ORDER
-      .filter(function (id) { return CATS_META[id]; })
-      .filter(function (id) { var meta = CATS_META[id]; return !meta.soloEn || meta.soloEn === pt; })
-      .map(function (id) {
-        var meta = CATS_META[id];
-        return Object.assign({ id: id }, meta, { productos: grouped[id] || [] });
-      })
-      .filter(function (c) { return c.productos.length > 0; });  // ocultar categorias sin productos activos
-  }
-
-  var categorias = buildCats(selectedPoint);
-
   // ── Catalogo deduplicado por nombre (para el flujo de pedido manual) ────────
   // Los productos vienen repetidos por punto. Para el catalogo de la UI
-  // solo necesitamos un entry por nombre (activos).
+  // solo necesitamos un entry por nombre (activos). Agrupados por categoria.
   var catalogoDedup = (function () {
     var seen = {};
     var out  = [];
@@ -690,12 +657,14 @@ export default function NossaCafe() {
     return out;
   })();
 
-  // Catalogo agrupado por categoria (para mostrar filtrado en la UI)
   var catalogoPorCat = {};
   catalogoDedup.forEach(function (p) {
     if (!catalogoPorCat[p.categoria]) catalogoPorCat[p.categoria] = [];
     catalogoPorCat[p.categoria].push(p);
   });
+
+  // Contar cuantos productos tienen cantidad > 0
+  var totalConCantidad = catalogoDedup.filter(function (p) { return (cantidades[p.producto] || 0) > 0; }).length;
 
   // ── GUARDAR CIERRE ───────────────────────────────────────────────────────────
   async function handleGuardarCierre() {
@@ -712,11 +681,23 @@ export default function NossaCafe() {
       return;
     }
 
-    // Construir datos compactos para URL
-    // pm = pedido manual como tuples: [[producto, categoria, cantidad, nota], ...]
-    // Formato compacto para mantener URL corta (~900 chars con 10 items)
+    // Construir pedidoManual desde cantidades > 0
+    var pedidoManual = [];
+    catalogoDedup.forEach(function (p) {
+      var cant = cantidades[p.producto] || 0;
+      if (cant > 0) {
+        pedidoManual.push({ producto: p.producto, categoria: p.categoria, cantidad: cant, origen: "manual" });
+      }
+    });
+
+    // Confirmacion si no hay items
+    if (pedidoManual.length === 0) {
+      if (!confirm("No agregaste productos al pedido.\nQuieres guardar el cierre sin pedido para Obrador?")) return;
+    }
+
+    // Formato compacto para URL: pm = [[producto, categoria, cantidad], ...]
     var pmCompacto = pedidoManual.map(function (it) {
-      return [it.producto, it.categoria, it.cantidad, it.nota || ""];
+      return [it.producto, it.categoria, it.cantidad];
     });
 
     var datosOperativos = {
@@ -742,14 +723,10 @@ export default function NossaCafe() {
     setSaving(true);
     try {
       await dispararGetSinCors(finalUrl);
-      console.log("dispararGetSinCors completado");
-
       await new Promise(function (r) { setTimeout(r, 1500); });
       var estadoNuevo = await apiEstadoCierres();
-      console.log("Estado tras guardar:", estadoNuevo);
 
       if (!estadoNuevo[pt]) {
-        console.warn("Punto " + pt + " aun no marcado. Reintentando...");
         await new Promise(function (r) { setTimeout(r, 1500); });
         estadoNuevo = await apiEstadoCierres();
       }
@@ -772,9 +749,7 @@ export default function NossaCafe() {
         Object.keys(porCat).forEach(function (catNom) {
           msg += catNom + ":\n";
           porCat[catNom].forEach(function (it) {
-            msg += "  - " + it.producto + ": " + it.cantidad + " und";
-            if (it.nota) msg += " (" + it.nota + ")";
-            msg += "\n";
+            msg += "  - " + it.producto + ": " + it.cantidad + " und\n";
           });
           msg += "\n";
         });
@@ -796,13 +771,8 @@ export default function NossaCafe() {
     setSelectedPoint(null);
     setResponsable("");
     setHora(horaActual());
-    setPedidoManual([]);
+    setCantidades({});
     setObservaciones("");
-    setPmProd("");
-    setPmCant("");
-    setPmNota("");
-    setPmEditIdx(-1);
-    setPmCatFilter("todas");
     setLastSaved(null);
     recargar();
     setScreen("inicio");
@@ -1483,7 +1453,7 @@ export default function NossaCafe() {
   }
 
   // ════════════════════════════════════════════════════════
-  // PANTALLA: CATEGORIA
+  // PANTALLA: PEDIDO PARA OBRADOR (grid de cantidades)
   // ════════════════════════════════════════════════════════
   if (screen === "categoria") {
     if (!selectedPoint) {
@@ -1499,55 +1469,9 @@ export default function NossaCafe() {
       );
     }
 
-    // Productos filtrados por categoria en el dropdown
-    var catsFiltradas = pmCatFilter === "todas" ? catalogoDedup : catalogoDedup.filter(function (p) { return p.categoria === pmCatFilter; });
-
-    // Funcion para agregar o actualizar item en el pedido
-    function agregarAlPedido() {
-      if (!pmProd)                         { alert("Selecciona un producto."); return; }
-      var cant = parseInt(pmCant, 10);
-      if (isNaN(cant) || cant <= 0)        { alert("Ingresa una cantidad valida."); return; }
-      var info = catalogoDedup.find(function (p) { return p.producto === pmProd; });
-      var cat  = info ? info.categoria : (productoACat[pmProd] || "otros");
-      var item = { producto: pmProd, categoria: cat, cantidad: cant, nota: pmNota.trim() };
-
-      if (pmEditIdx >= 0) {
-        // Actualizando item existente
-        setPedidoManual(function (prev) {
-          var u = prev.slice();
-          u[pmEditIdx] = item;
-          return u;
-        });
-        setPmEditIdx(-1);
-      } else {
-        // Verificar si ya existe — sumar o agregar
-        var existeIdx = pedidoManual.findIndex(function (it) { return it.producto === pmProd; });
-        if (existeIdx >= 0) {
-          setPedidoManual(function (prev) {
-            var u = prev.slice();
-            u[existeIdx] = Object.assign({}, u[existeIdx], { cantidad: u[existeIdx].cantidad + cant, nota: pmNota.trim() || u[existeIdx].nota });
-            return u;
-          });
-        } else {
-          setPedidoManual(function (prev) { return prev.concat([item]); });
-        }
-      }
-      setPmProd("");
-      setPmCant("");
-      setPmNota("");
-    }
-
-    function editarItem(idx) {
-      var it = pedidoManual[idx];
-      setPmProd(it.producto);
-      setPmCant(String(it.cantidad));
-      setPmNota(it.nota || "");
-      setPmEditIdx(idx);
-    }
-
-    function eliminarItem(idx) {
-      setPedidoManual(function (prev) { return prev.filter(function (_, i) { return i !== idx; }); });
-      if (pmEditIdx === idx) { setPmEditIdx(-1); setPmProd(""); setPmCant(""); setPmNota(""); }
+    function setCant(nombre, val) {
+      var n = val === "" ? 0 : Math.max(0, parseInt(val) || 0);
+      setCantidades(function (prev) { var u = Object.assign({}, prev); u[nombre] = n; return u; });
     }
 
     return (
@@ -1560,144 +1484,76 @@ export default function NossaCafe() {
               <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", padding: "3px 10px", borderRadius: 20 }}>{selectedPoint}</span>
             </div>
             <div style={{ fontSize: 20, fontWeight: "bold", textAlign: "center", color: "#F5E6D3" }}>Pedido para Obrador</div>
-            <div style={{ textAlign: "center", fontSize: 11, opacity: 0.75, marginTop: 4 }}>{pedidoManual.length} productos en el pedido</div>
+            <div style={{ textAlign: "center", fontSize: 11, opacity: 0.75, marginTop: 4 }}>
+              {totalConCantidad > 0 ? totalConCantidad + " productos con pedido" : "Escribe las cantidades que necesitas"}
+            </div>
           </div>
 
-          <div style={{ padding: "14px 16px", overflowY: "auto", maxHeight: "65vh" }}>
-
-            {/* Formulario para agregar producto */}
-            <div style={{ background: "#FFF8F4", border: "1.5px solid #E5D8CC", borderRadius: 12, padding: 12, marginBottom: 14 }}>
-              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#7C5C3B", marginBottom: 8 }}>
-                {pmEditIdx >= 0 ? "Editando item" : "Agregar producto"}
-              </div>
-
-              {/* Filtro de categoria */}
-              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Categoria</div>
-              <select
-                value={pmCatFilter}
-                onChange={function (e) { setPmCatFilter(e.target.value); setPmProd(""); }}
-                style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 12, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}
-              >
-                <option value="todas">Todas las categorias</option>
-                {CATS_ORDER.map(function (id) {
-                  if (!CATS_META[id]) return null;
-                  var count = (catalogoPorCat[id] || []).length;
-                  if (count === 0) return null;
-                  return <option key={id} value={id}>{CATS_META[id].nombre} ({count})</option>;
-                })}
-              </select>
-
-              {/* Selector de producto */}
-              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Producto</div>
-              <select
-                value={pmProd}
-                onChange={function (e) { setPmProd(e.target.value); }}
-                style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}
-              >
-                <option value="">-- Seleccionar producto --</option>
-                {catsFiltradas.map(function (p) {
-                  return <option key={p.producto} value={p.producto}>{p.producto}</option>;
-                })}
-              </select>
-
-              {/* Cantidad + Nota */}
-              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Cantidad</div>
-                  <input
-                    type="number" inputMode="numeric" min="1" placeholder="0"
-                    value={pmCant}
-                    onChange={function (e) { setPmCant(e.target.value); }}
-                    style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 14, fontFamily: "Georgia, serif", boxSizing: "border-box", textAlign: "center" }}
-                  />
-                </div>
-                <div style={{ flex: 2 }}>
-                  <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Nota (opcional)</div>
-                  <input
-                    type="text" placeholder="Ej: urgente, para vitrina..."
-                    value={pmNota}
-                    onChange={function (e) { setPmNota(e.target.value); }}
-                    style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 12, fontFamily: "Georgia, serif", boxSizing: "border-box" }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  onClick={agregarAlPedido}
-                  style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#7C5C3B", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}
-                >{pmEditIdx >= 0 ? "Actualizar" : "Agregar"}</button>
-                {pmEditIdx >= 0 && (
-                  <button
-                    onClick={function () { setPmEditIdx(-1); setPmProd(""); setPmCant(""); setPmNota(""); }}
-                    style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid #CBD5E0", background: "#fff", color: "#4A5568", fontSize: 13, cursor: "pointer", fontFamily: "Georgia, serif" }}
-                  >Cancelar</button>
-                )}
-              </div>
-            </div>
-
-            {/* Lista del pedido actual */}
-            {pedidoManual.length > 0 && (
-              <div style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#5C4DB1", marginBottom: 6 }}>
-                  Pedido actual ({pedidoManual.length})
-                </div>
-                <div style={{ background: "#FAFAFA", borderRadius: 12, border: "1px solid #F1F5F9", overflow: "hidden" }}>
-                  {pedidoManual.map(function (it, i) {
-                    var catNom = CAT_NOMBRE[it.categoria] || it.categoria;
+          {/* Grid de productos por categoria */}
+          <div style={{ overflowY: "auto", maxHeight: "58vh" }}>
+            {CATS_ORDER.map(function (catId) {
+              var meta  = CATS_META[catId];
+              if (!meta) return null;
+              var prods = catalogoPorCat[catId];
+              if (!prods || prods.length === 0) return null;
+              return (
+                <div key={catId}>
+                  {/* Header de categoria */}
+                  <div style={{ padding: "8px 16px", background: meta.bg, borderBottom: "1px solid #E5E7EB", borderTop: "1px solid #E5E7EB" }}>
+                    <span style={{ fontSize: 12, fontWeight: "bold", color: meta.color, textTransform: "uppercase", letterSpacing: 1 }}>{meta.icon} {meta.nombre}</span>
+                    <span style={{ fontSize: 11, color: "#9CA3AF", marginLeft: 6 }}>({prods.length})</span>
+                  </div>
+                  {/* Filas de productos */}
+                  {prods.map(function (p, i) {
+                    var val = cantidades[p.producto] || 0;
+                    var hasQty = val > 0;
                     return (
-                      <div key={i} style={{ padding: "10px 12px", borderBottom: i < pedidoManual.length - 1 ? "1px solid #F1F5F9" : "none", display: "flex", alignItems: "center", gap: 8 }}>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 13, fontWeight: "600", color: "#2D3748" }}>{it.producto}</div>
-                          <div style={{ fontSize: 10, color: "#9CA3AF" }}>
-                            {catNom}
-                            {it.nota ? " - " + it.nota : ""}
-                          </div>
-                        </div>
-                        <span style={{ fontSize: 14, fontWeight: "bold", color: "#7C5C3B", minWidth: 50, textAlign: "right" }}>{it.cantidad} und</span>
-                        <button
-                          onClick={function () { editarItem(i); }}
-                          style={{ background: "#EDF2F7", border: "none", padding: "6px 8px", borderRadius: 6, cursor: "pointer", fontSize: 11 }}
-                        >Ed</button>
-                        <button
-                          onClick={function () { eliminarItem(i); }}
-                          style={{ background: "#FEE2E2", border: "none", padding: "6px 8px", borderRadius: 6, cursor: "pointer", fontSize: 11, color: "#991B1B" }}
-                        >X</button>
+                      <div key={p.producto} style={{ display: "flex", alignItems: "center", padding: "8px 16px", borderBottom: "1px solid #F3F4F6", background: hasQty ? "#FFFBEB" : "#fff" }}>
+                        <div style={{ flex: 1, fontSize: 13, color: "#2D3748", fontWeight: hasQty ? "600" : "normal" }}>{p.producto}</div>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          value={val === 0 ? "" : String(val)}
+                          placeholder="0"
+                          onChange={function (e) { setCant(p.producto, e.target.value); }}
+                          onFocus={function (e) { e.target.select(); }}
+                          style={{
+                            width: 56, height: 34, textAlign: "center", borderRadius: 8,
+                            border: "2px solid " + (hasQty ? meta.color : "#E2E8F0"),
+                            fontSize: 16, fontWeight: "bold", outline: "none",
+                            color: hasQty ? meta.color : "#9CA3AF",
+                            background: hasQty ? "#fff" : "#FAFAFA",
+                            fontFamily: "Georgia, serif",
+                          }}
+                        />
                       </div>
                     );
                   })}
                 </div>
-              </div>
-            )}
+              );
+            })}
+          </div>
 
-            {pedidoManual.length === 0 && (
-              <div style={{ padding: 16, background: "#FAFAFA", borderRadius: 12, textAlign: "center", color: "#9CA3AF", fontSize: 13, fontStyle: "italic", marginBottom: 14 }}>
-                Agrega productos al pedido usando el formulario de arriba.
-              </div>
-            )}
-
-            {/* Observaciones */}
-            <div style={{ marginBottom: 14 }}>
-              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Observaciones generales (opcional)</div>
+          {/* Observaciones + Guardar */}
+          <div style={{ padding: "12px 16px 16px", borderTop: "2px solid #E5E7EB", background: "#FAFAFA" }}>
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Observaciones (opcional)</div>
               <textarea
-                placeholder="Ej: mañana hay evento, pedir doble de empanadas..."
+                placeholder="Ej: mañana hay evento, pedir doble..."
                 value={observaciones}
                 onChange={function (e) { setObservaciones(e.target.value); }}
                 rows={2}
                 style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 12, fontFamily: "Georgia, serif", boxSizing: "border-box", resize: "vertical" }}
               />
             </div>
-          </div>
-
-          {/* Footer: Guardar */}
-          <div style={{ padding: 14, borderTop: "1px solid #F0F0F0", background: "#FAFAFA" }}>
             {saving && <div style={{ textAlign: "center", color: "#6B7280", fontSize: 12, marginBottom: 8 }}>Guardando en Sheets...</div>}
             <button
               style={{ ...S.btn, marginTop: 0, opacity: !saving ? 1 : 0.35 }}
               disabled={saving}
               onClick={handleGuardarCierre}
             >
-              {saving ? "Guardando..." : "Guardar cierre"}
+              {saving ? "Guardando..." : "Guardar cierre" + (totalConCantidad > 0 ? " (" + totalConCantidad + ")" : "")}
             </button>
           </div>
         </div>
@@ -1736,7 +1592,6 @@ export default function NossaCafe() {
                     <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #F0F0F0", alignItems: "center" }}>
                       <div>
                         <span style={{ fontSize: 13, color: "#2D3748" }}>{item.producto}</span>
-                        {item.nota && <span style={{ fontSize: 10, color: "#9CA3AF", marginLeft: 6 }}>({item.nota})</span>}
                       </div>
                       <span style={{ fontSize: 13, fontWeight: "bold", color: "#7C5C3B" }}>{item.cantidad} und</span>
                     </div>
@@ -1844,13 +1699,8 @@ export default function NossaCafe() {
                 onClick={function () {
                   if (!selectedPoint) { alert("Selecciona Centro, Primavera o CF primero."); return; }
                   setHora(horaActual());
-                  setPedidoManual([]);
+                  setCantidades({});
                   setObservaciones("");
-                  setPmProd("");
-                  setPmCant("");
-                  setPmNota("");
-                  setPmEditIdx(-1);
-                  setPmCatFilter("todas");
                   setScreen("categoria");
                 }}
               >
