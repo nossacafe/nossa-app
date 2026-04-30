@@ -40,7 +40,7 @@ const CAT_NOMBRE = (function () {
 const PRODUCTOS_FALLBACK_BASE = [
   // Pasteleria
   { categoria: "pasteleria", producto: "Pastel pollo", min: 12, max: 18 },
-  { categoria: "pasteleria", producto: "Almojabanas", min: 2, max: 5 },
+  { categoria: "pasteleria", producto: "Almojavanas", min: 2, max: 5 },
   { categoria: "pasteleria", producto: "Galleta avena", min: 3, max: 6 },
   { categoria: "pasteleria", producto: "Galleta macadamia", min: 3, max: 6 },
   { categoria: "pasteleria", producto: "Galleta chocolate", min: 2, max: 4 },
@@ -52,7 +52,7 @@ const PRODUCTOS_FALLBACK_BASE = [
   { categoria: "pasteleria", producto: "Torta zanahoria", min: 6, max: 10 },
   { categoria: "pasteleria", producto: "Torta chocolate", min: 6, max: 10 },
   { categoria: "pasteleria", producto: "Torta naranja", min: 2, max: 6 },
-  { categoria: "pasteleria", producto: "Torta almojabana", min: 2, max: 6 },
+  { categoria: "pasteleria", producto: "Torta almojavana", min: 2, max: 6 },
   { categoria: "pasteleria", producto: "Tarta cafe", min: 4, max: 8 },
   { categoria: "pasteleria", producto: "Tarta arandanos", min: 6, max: 12 },
   { categoria: "pasteleria", producto: "Cheesecake lulo", min: 3, max: 7 },
@@ -62,10 +62,10 @@ const PRODUCTOS_FALLBACK_BASE = [
   { categoria: "pasteleria", producto: "Milhojas arequipe", min: 5, max: 8 },
   { categoria: "pasteleria", producto: "Milhojas limon", min: 5, max: 8 },
   { categoria: "pasteleria", producto: "Cocos", min: 3, max: 6 },
-  { categoria: "pasteleria", producto: "Fresas", min: 3, max: 8 },
+  { categoria: "pasteleria", producto: "Fresas und", min: 3, max: 8 },
   { categoria: "pasteleria", producto: "Osos", min: 8, max: 12 },
   // Cafeteria
-  { categoria: "cafeteria", producto: "baileys", min: 1, max: 1 },
+  { categoria: "cafeteria", producto: "Crema whisky", min: 1, max: 1 },
   { categoria: "cafeteria", producto: "Hierbabuena", min: 1, max: 1 },
   { categoria: "cafeteria", producto: "Tarro aro fresa", min: 1, max: 1 },
   { categoria: "cafeteria", producto: "Tarro aro papaya", min: 1, max: 1 },
@@ -205,6 +205,50 @@ function normalizarItemsCierre(datos) {
   return Object.keys(bag).map(function (nombre) {
     return { nombre: nombre, cantidad: bag[nombre] };
   });
+}
+
+// Extrae items del pedidoManual preservando nota y categoria.
+// Fuente principal: pedidoManual o pm. Fallback: formatos viejos.
+function extraerPedidoManualItems(datos) {
+  if (!datos || typeof datos !== "object") return [];
+  var bag = {};
+  function addItem(producto, categoria, cantidad, nota) {
+    var c = Number(cantidad) || 0;
+    if (!producto || c <= 0) return;
+    var key = String(producto);
+    if (bag[key]) {
+      bag[key].cantidad += c;
+      if (nota && !bag[key].nota) bag[key].nota = nota;
+    } else {
+      bag[key] = { producto: key, categoria: categoria || "", cantidad: c, nota: nota || "" };
+    }
+  }
+  if (Array.isArray(datos.pedidoManual)) {
+    datos.pedidoManual.forEach(function (it) {
+      if (it && typeof it === "object") addItem(it.producto || it.nombre || it.prod, it.categoria || "", it.cantidad != null ? it.cantidad : it.cant, it.nota || "");
+    });
+    if (Object.keys(bag).length > 0) return Object.keys(bag).map(function (k) { return bag[k]; });
+  }
+  if (Array.isArray(datos.pm)) {
+    datos.pm.forEach(function (tuple) {
+      if (!Array.isArray(tuple) || tuple.length < 3) return;
+      addItem(tuple[0], tuple[1], tuple[2], tuple[3] || "");
+    });
+    if (Object.keys(bag).length > 0) return Object.keys(bag).map(function (k) { return bag[k]; });
+  }
+  ["p", "pedido", "pedidos", "produccion"].forEach(function (key) {
+    var arr = datos[key];
+    if (!Array.isArray(arr)) return;
+    arr.forEach(function (it) {
+      if (Array.isArray(it)) { addItem(it[0], "", it[1], ""); }
+      else if (it && typeof it === "object") {
+        var n = it.nombre || it.prod || it.producto || it.name || "";
+        var c = it.cantidad != null ? it.cantidad : (it.cant != null ? it.cant : (it.qty != null ? it.qty : 0));
+        addItem(n, it.categoria || "", c, it.nota || "");
+      }
+    });
+  });
+  return Object.keys(bag).map(function (k) { return bag[k]; });
 }
 
 function lsGet(k) {
@@ -391,17 +435,37 @@ async function apiGuardarCierre(punto, datos) {
   return estado;
 }
 
-// ─── ESTILOS ─────────────────────────────────────────────────────────────────
+// ─── ESTILOS — Nossa Brand ──────────────────────────────────────────────────
+// Pantone 317C aqua (#6BB8B0), negro (#1A1A1A), blanco (#FFFFFF)
+var NOSSA = {
+  aqua:     "#6BB8B0",
+  aquaDark: "#4A9E95",
+  aquaLight:"#E8F5F3",
+  aquaPale: "#F2FAF8",
+  black:    "#1A1A1A",
+  charcoal: "#2D3748",
+  gray:     "#6B7280",
+  grayLight:"#E5E7EB",
+  white:    "#FFFFFF",
+  cream:    "#FAFBFA",
+  ok:       "#2F9E6E",
+  okBg:     "#E6F7EF",
+  warn:     "#D97706",
+  warnBg:   "#FEF3C7",
+  danger:   "#DC2626",
+};
+
 var S = {
-  page:  { minHeight: "100vh", background: "#F2EDE8", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12, fontFamily: "Georgia, serif" },
-  card:  { width: "100%", maxWidth: 480, background: "#fff", borderRadius: 20, boxShadow: "0 6px 40px rgba(0,0,0,0.12)", overflow: "hidden" },
-  hero:  { background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "32px 24px 24px", textAlign: "center", color: "#fff" },
+  page:  { minHeight: "100vh", background: "#F4F6F5", display: "flex", justifyContent: "center", alignItems: "flex-start", padding: 12, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" },
+  card:  { width: "100%", maxWidth: 480, background: NOSSA.white, borderRadius: 20, boxShadow: "0 4px 32px rgba(0,0,0,0.08)", overflow: "hidden" },
+  hero:  { background: NOSSA.black, padding: "32px 24px 24px", textAlign: "center", color: NOSSA.white },
   body:  { padding: "8px 20px 28px" },
-  lbl:   { fontSize: 11, color: "#6B7280", fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, margin: "16px 0 8px" },
-  inp:   { width: "100%", padding: "13px 14px", borderRadius: 12, border: "2px solid #E5D8CC", fontSize: 15, outline: "none", fontFamily: "Georgia, serif", background: "#FFFAF7", boxSizing: "border-box" },
-  btn:   { display: "block", width: "100%", padding: "16px", borderRadius: 14, border: "none", background: "linear-gradient(135deg,#C8873A,#7C5C3B)", color: "#fff", fontSize: 16, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", marginTop: 14 },
-  ghost: { background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", padding: "7px 13px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif" },
-  link:  { display: "block", width: "100%", marginTop: 12, padding: "10px", background: "transparent", border: "none", color: "#9CA3AF", fontSize: 12, cursor: "pointer", fontFamily: "Georgia, serif", textDecoration: "underline" },
+  lbl:   { fontSize: 11, color: NOSSA.gray, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.2, margin: "16px 0 8px" },
+  inp:   { width: "100%", padding: "13px 14px", borderRadius: 12, border: "2px solid " + NOSSA.grayLight, fontSize: 15, outline: "none", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", background: NOSSA.cream, boxSizing: "border-box" },
+  btn:   { display: "block", width: "100%", padding: "16px", borderRadius: 14, border: "none", background: NOSSA.black, color: NOSSA.white, fontSize: 16, fontWeight: "bold", cursor: "pointer", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", marginTop: 14, letterSpacing: 0.5 },
+  ghost: { background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)", color: NOSSA.white, padding: "7px 14px", borderRadius: 20, cursor: "pointer", fontSize: 12, fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif" },
+  link:  { display: "block", width: "100%", marginTop: 12, padding: "10px", background: "transparent", border: "none", color: "#9CA3AF", fontSize: 12, cursor: "pointer", fontFamily: "'Helvetica Neue', Helvetica, Arial, sans-serif", textDecoration: "underline" },
+  font:  "'Helvetica Neue', Helvetica, Arial, sans-serif",
 };
 
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
@@ -789,149 +853,206 @@ export default function NossaCafe() {
   if (screen === "obrador") {
     var enviadosCount = PUNTOS.filter(function (p) { return despachoMarcado(fechaObrador, p); }).length;
 
-    // Cuales puntos contribuyen al consolidado: solo los que tienen datos REALES
-    // para fechaObrador. Los que muestran "ultimo cierre" (esUltimo=true) NO entran.
     var puntosEnConsolidado = PUNTOS.filter(function (p) {
       var d = obradorData[p];
       return d && d.found && !d.esUltimo;
     });
     var puntosPendientes = PUNTOS.filter(function (p) { return puntosEnConsolidado.indexOf(p) < 0; });
 
-    // ─── Construir consolidado general ────────────────────────────────────────
-    // map: nombreProducto -> { nombre, cat, total, porPunto, esProduccion }
+    // ─── Consolidado general agrupado por categoria ───────────────────────────
     var consolidadoMap = {};
     puntosEnConsolidado.forEach(function (p) {
       var d = obradorData[p];
-      var items = normalizarItemsCierre(d.datos);  // [{nombre, cantidad}]
+      var items = extraerPedidoManualItems(d.datos);
       items.forEach(function (it) {
-        if (!consolidadoMap[it.nombre]) {
-          var catId = productoACat[it.nombre] || "otros";
-          consolidadoMap[it.nombre] = {
-            nombre:       it.nombre,
-            cat:          catId,
-            total:        0,
-            porPunto:     { Centro: 0, Primavera: 0, CF: 0 },
-            esProduccion: CATS_PRODUCCION.indexOf(catId) >= 0,
-          };
+        if (!consolidadoMap[it.producto]) {
+          consolidadoMap[it.producto] = { producto: it.producto, categoria: it.categoria || productoACat[it.producto] || "otros", total: 0 };
         }
-        consolidadoMap[it.nombre].porPunto[p] += it.cantidad;
-        consolidadoMap[it.nombre].total       += it.cantidad;
+        consolidadoMap[it.producto].total += it.cantidad;
       });
     });
-    var consolidadoAll = Object.keys(consolidadoMap).map(function (k) { return consolidadoMap[k]; });
-    var produccionCons = consolidadoAll.filter(function (x) { return  x.esProduccion; }).sort(function (a, b) { return b.total - a.total; });
-    var pedidosCons    = consolidadoAll.filter(function (x) { return !x.esProduccion; });
-    // Agrupar pedidos consolidados por categoria
-    var pedidosConsPorCat = {};
-    pedidosCons.forEach(function (it) {
-      if (!pedidosConsPorCat[it.cat]) pedidosConsPorCat[it.cat] = [];
-      pedidosConsPorCat[it.cat].push(it);
+    var consolidadoList = Object.keys(consolidadoMap).map(function (k) { return consolidadoMap[k]; });
+    // Agrupar por categoria
+    var consPorCat = {};
+    var totalGeneralCons = 0;
+    consolidadoList.forEach(function (it) {
+      var catId = it.categoria;
+      if (!consPorCat[catId]) consPorCat[catId] = [];
+      consPorCat[catId].push(it);
+      totalGeneralCons += it.total;
     });
-    Object.keys(pedidosConsPorCat).forEach(function (c) {
-      pedidosConsPorCat[c].sort(function (a, b) { return b.total - a.total; });
+    // Ordenar items dentro de cada cat
+    Object.keys(consPorCat).forEach(function (c) {
+      consPorCat[c].sort(function (a, b) { return b.total - a.total; });
     });
 
-    // Helper: render una linea de item consolidado con desglose por punto
-    function renderItemConsolidado(it, key, color) {
-      var partes = [];
-      if (it.porPunto.Centro    > 0) partes.push("Centro "    + it.porPunto.Centro);
-      if (it.porPunto.Primavera > 0) partes.push("Primavera " + it.porPunto.Primavera);
-      if (it.porPunto.CF        > 0) partes.push("CF "        + it.porPunto.CF);
-      return (
-        <div key={key} style={{ padding: "6px 0", borderBottom: "1px solid #F5F5F5" }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 13, fontWeight: "600", color: "#2D3748" }}>{it.nombre}</span>
-            <span style={{ fontSize: 13, fontWeight: "bold", color: color }}>{it.total} und</span>
-          </div>
-          {partes.length > 0 && (
-            <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 2 }}>{partes.join(" + ")}</div>
-          )}
-        </div>
-      );
+    // ─── Generar texto WhatsApp ───────────────────────────────────────────────
+    function generarTextoWhatsApp() {
+      var fechaDisp = fechaDisplay(fechaObrador);
+      var txt = "NOSSA - OBRADOR\n" + fechaDisp + "\n";
+      txt += puntosEnConsolidado.length + "/3 cerrados | " + enviadosCount + "/3 enviados\n";
+      txt += "────────────────\n\n";
+
+      if (consolidadoList.length > 0) {
+        txt += "CONSOLIDADO GENERAL (" + totalGeneralCons + " und)\n\n";
+        CATS_ORDER.forEach(function (catId) {
+          var lista = consPorCat[catId];
+          if (!lista || lista.length === 0) return;
+          var catTotal = lista.reduce(function (s, it) { return s + it.total; }, 0);
+          txt += (CAT_NOMBRE[catId] || catId) + " (" + catTotal + "):\n";
+          lista.forEach(function (it) {
+            txt += "  " + it.producto + ": " + it.total + "\n";
+          });
+          txt += "\n";
+        });
+        // Categorias fuera de CATS_ORDER
+        Object.keys(consPorCat).forEach(function (catId) {
+          if (CATS_ORDER.indexOf(catId) >= 0) return;
+          var lista = consPorCat[catId];
+          var catTotal = lista.reduce(function (s, it) { return s + it.total; }, 0);
+          txt += (CAT_NOMBRE[catId] || catId) + " (" + catTotal + "):\n";
+          lista.forEach(function (it) {
+            txt += "  " + it.producto + ": " + it.total + "\n";
+          });
+          txt += "\n";
+        });
+      } else {
+        txt += "Sin pedidos registrados.\n\n";
+      }
+
+      txt += "────────────────\n\nDESPACHO POR PUNTO\n\n";
+
+      PUNTOS.forEach(function (p) {
+        var d    = obradorData[p];
+        var sent = despachoMarcado(fechaObrador, p);
+        if (!d || !d.found) {
+          txt += p + ": Pendiente / Sin cierre\n\n";
+          return;
+        }
+        var datos = d.datos;
+        var items = extraerPedidoManualItems(datos);
+        var estado = sent ? "Enviado" : "Cerrado";
+        txt += p + " (" + estado + "):\n";
+        if (items.length === 0) {
+          txt += "  Sin pedido\n";
+        } else {
+          var puntoTotal = items.reduce(function (s, it) { return s + it.cantidad; }, 0);
+          items.forEach(function (it) {
+            txt += "  " + it.producto + ": " + it.cantidad + "\n";
+          });
+          txt += "  Total: " + puntoTotal + " und\n";
+        }
+        var obs = datos.o || datos.obs || datos.observaciones || "";
+        if (obs) txt += "  Obs: " + obs + "\n";
+        txt += "\n";
+      });
+
+      return txt.trim();
+    }
+
+    function copiarWhatsApp() {
+      var txt = generarTextoWhatsApp();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(function () { alert("Copiado al portapapeles"); }).catch(function () { prompt("Copia este texto:", txt); });
+      } else {
+        prompt("Copia este texto:", txt);
+      }
     }
 
     // ─── Tarjeta de DESPACHO POR PUNTO ────────────────────────────────────────
     function renderDespachoPunto(p) {
-      var d        = obradorData[p];
-      var sent     = despachoMarcado(fechaObrador, p);
-      var datos    = d && d.found ? d.datos : null;
+      var d    = obradorData[p];
+      var sent = despachoMarcado(fechaObrador, p);
+      var datos = d && d.found ? d.datos : null;
 
       if (!d || !d.found || !datos) {
         return (
-          <div key={p} style={{ borderRadius: 12, border: "2px dashed #E2E8F0", background: "#FAFAFA", padding: "14px", marginBottom: 10 }}>
+          <div key={p} style={{ borderRadius: 14, border: "2px dashed " + NOSSA.grayLight, background: NOSSA.cream, padding: "14px", marginBottom: 12 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <div style={{ fontSize: 15, fontWeight: "bold", color: "#2D3748" }}>{p}</div>
-              <span style={{ fontSize: 11, fontWeight: "bold", color: "#92400E", background: "#FEF3C7", padding: "3px 10px", borderRadius: 20 }}>Pendiente / Sin cierre</span>
+              <div style={{ fontSize: 15, fontWeight: "bold", color: NOSSA.charcoal }}>{p}</div>
+              <span style={{ fontSize: 11, fontWeight: "bold", color: NOSSA.warn, background: NOSSA.warnBg, padding: "3px 10px", borderRadius: 20 }}>Pendiente</span>
             </div>
-            <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 10 }}>No hay cierre registrado para {fechaDisplay(fechaObrador)}.</div>
+            <div style={{ fontSize: 12, color: NOSSA.gray, marginBottom: 10 }}>No hay cierre para {fechaDisplay(fechaObrador)}.</div>
             <button
               onClick={function () { cargarUltimoPunto(p); }}
-              style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px solid #7C5C3B", background: "#fff", color: "#7C5C3B", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}
+              style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px solid " + NOSSA.aquaDark, background: NOSSA.white, color: NOSSA.aquaDark, fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: S.font }}
             >Ver ultimo cierre disponible</button>
           </div>
         );
       }
 
-      var itemsNorm  = normalizarItemsCierre(datos);
-      var produccion = itemsNorm.filter(function (it) { return CATS_PRODUCCION.indexOf(productoACat[it.nombre]) >= 0; });
-      var pedidos    = itemsNorm.filter(function (it) { return CATS_PRODUCCION.indexOf(productoACat[it.nombre]) <  0; });
-      var pedidosPorCat = {};
-      pedidos.forEach(function (it) {
-        var cat = productoACat[it.nombre] || "otros";
-        if (!pedidosPorCat[cat]) pedidosPorCat[cat] = [];
-        pedidosPorCat[cat].push(it);
-      });
-
-      var hora = datos.h || datos.hora || "—";
-      var resp = datos.r || datos.responsable || "—";
-      var obs  = datos.o || datos.obs || "";
+      var itemsPunto    = extraerPedidoManualItems(datos);
+      var puntoTotal    = itemsPunto.reduce(function (s, it) { return s + it.cantidad; }, 0);
+      var hora          = datos.h || datos.hora || "—";
+      var resp          = datos.r || datos.responsable || "—";
+      var obs           = datos.o || datos.obs || datos.observaciones || "";
       var fechaCierreReal  = d.fecha;
       var muestraOtraFecha = d.esUltimo && fechaCierreReal && fechaCierreReal !== fechaObrador;
 
+      // Agrupar items del punto por categoria
+      var itemsPorCat = {};
+      itemsPunto.forEach(function (it) {
+        var catId = it.categoria || productoACat[it.producto] || "otros";
+        if (!itemsPorCat[catId]) itemsPorCat[catId] = [];
+        itemsPorCat[catId].push(it);
+      });
+
+      var estadoColor = sent ? NOSSA.ok : NOSSA.aquaDark;
+      var estadoLabel = sent ? "Enviado" : "Cerrado";
+      var estadoBg    = sent ? NOSSA.okBg : NOSSA.aquaLight;
+
       return (
-        <div key={p} style={{ borderRadius: 12, border: "2px solid " + (sent ? "#38A169" : muestraOtraFecha ? "#FED7AA" : "#E2E8F0"), background: "#fff", marginBottom: 10, opacity: sent ? 0.92 : 1 }}>
-          <div style={{ padding: "12px 14px", borderBottom: "1px solid #F0F0F0", background: muestraOtraFecha ? "#FFF7ED" : (sent ? "#F0FFF4" : "#FAFAFA") }}>
+        <div key={p} style={{ borderRadius: 14, border: "2px solid " + (muestraOtraFecha ? NOSSA.warn : sent ? NOSSA.ok : NOSSA.grayLight), background: NOSSA.white, marginBottom: 12, opacity: sent ? 0.92 : 1 }}>
+          <div style={{ padding: "12px 14px", borderBottom: "1px solid #F0F0F0", background: muestraOtraFecha ? NOSSA.warnBg : (sent ? NOSSA.okBg : NOSSA.cream) }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ fontSize: 16, fontWeight: "bold", color: "#2D3748" }}>{p}</div>
-              <span style={{ fontSize: 10, fontWeight: "bold", color: "#15803D", background: "#DCFCE7", padding: "3px 10px", borderRadius: 20 }}>Cerrado</span>
+              <div style={{ fontSize: 16, fontWeight: "bold", color: NOSSA.charcoal }}>{p}</div>
+              <span style={{ fontSize: 10, fontWeight: "bold", color: estadoColor, background: estadoBg, padding: "3px 10px", borderRadius: 20 }}>{estadoLabel}</span>
             </div>
-            <div style={{ fontSize: 11, color: "#6B7280", marginTop: 3 }}>
+            <div style={{ fontSize: 11, color: NOSSA.gray, marginTop: 3 }}>
               {fechaDisplay(fechaCierreReal)} - {hora} - {resp}
+              {puntoTotal > 0 && <span style={{ marginLeft: 8, fontWeight: "bold", color: NOSSA.aquaDark }}>{puntoTotal} und</span>}
             </div>
             {muestraOtraFecha && (
               <div style={{ marginTop: 6, fontSize: 10, fontWeight: "bold", color: "#9A3412", background: "#FED7AA", padding: "5px 8px", borderRadius: 6 }}>
-                Este dato pertenece a otra fecha y no entra en el consolidado seleccionado
+                Dato de otra fecha — no entra en el consolidado
               </div>
             )}
           </div>
 
-          {produccion.length > 0 && (
-            <div style={{ padding: "10px 14px" }}>
-              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#7C5C3B", marginBottom: 6 }}>Produccion ({produccion.length})</div>
-              {produccion.map(function (it, i) {
+          {itemsPunto.length > 0 ? (
+            <div style={{ padding: "8px 14px 4px" }}>
+              {CATS_ORDER.map(function (catId) {
+                var lista = itemsPorCat[catId];
+                if (!lista || lista.length === 0) return null;
+                var meta = CATS_META[catId];
                 return (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: i < produccion.length - 1 ? "1px solid #F5F5F5" : "none" }}>
-                    <span style={{ fontSize: 13, color: "#2D3748" }}>{it.nombre}</span>
-                    <span style={{ fontSize: 13, fontWeight: "bold", color: "#7C5C3B" }}>{it.cantidad} und</span>
+                  <div key={catId} style={{ marginBottom: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: meta ? meta.color : NOSSA.gray, marginBottom: 3 }}>{CAT_NOMBRE[catId] || catId}</div>
+                    {lista.map(function (it, i) {
+                      return (
+                        <div key={i} style={{ padding: "4px 0", borderBottom: "1px solid #F5F5F5" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span style={{ fontSize: 13, color: NOSSA.charcoal }}>{it.producto}</span>
+                            <span style={{ fontSize: 13, fontWeight: "bold", color: NOSSA.aquaDark }}>{it.cantidad} und</span>
+                          </div>
+                          {it.nota && <div style={{ fontSize: 11, color: NOSSA.gray, fontStyle: "italic", marginTop: 1 }}>{it.nota}</div>}
+                        </div>
+                      );
+                    })}
                   </div>
                 );
               })}
-            </div>
-          )}
-
-          {pedidos.length > 0 && (
-            <div style={{ padding: "10px 14px", borderTop: produccion.length > 0 ? "1px solid #F0F0F0" : "none" }}>
-              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#5C4DB1", marginBottom: 6 }}>Pedidos ({pedidos.length})</div>
-              {Object.keys(pedidosPorCat).map(function (catId) {
-                var lista = pedidosPorCat[catId];
+              {/* Categorias fuera de CATS_ORDER */}
+              {Object.keys(itemsPorCat).filter(function (c) { return CATS_ORDER.indexOf(c) < 0; }).map(function (catId) {
+                var lista = itemsPorCat[catId];
                 return (
                   <div key={catId} style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 11, fontWeight: "bold", color: "#9CA3AF", marginBottom: 3 }}>{CAT_NOMBRE[catId] || catId}</div>
+                    <div style={{ fontSize: 10, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: NOSSA.gray, marginBottom: 3 }}>{CAT_NOMBRE[catId] || catId}</div>
                     {lista.map(function (it, i) {
                       return (
-                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-                          <span style={{ fontSize: 12, color: "#2D3748" }}>{it.nombre}</span>
-                          <span style={{ fontSize: 12, fontWeight: "bold", color: "#5C4DB1" }}>{it.cantidad} und</span>
+                        <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: "1px solid #F5F5F5" }}>
+                          <span style={{ fontSize: 13, color: NOSSA.charcoal }}>{it.producto}</span>
+                          <span style={{ fontSize: 13, fontWeight: "bold", color: NOSSA.aquaDark }}>{it.cantidad} und</span>
                         </div>
                       );
                     })}
@@ -939,23 +1060,21 @@ export default function NossaCafe() {
                 );
               })}
             </div>
-          )}
-
-          {produccion.length === 0 && pedidos.length === 0 && (
-            <div style={{ padding: "12px 14px", fontSize: 12, color: "#6B7280", fontStyle: "italic" }}>Sin produccion ni pedidos pendientes</div>
+          ) : (
+            <div style={{ padding: "14px", fontSize: 13, color: NOSSA.gray, textAlign: "center" }}>Cerrado sin pedido para Obrador</div>
           )}
 
           {obs && (
-            <div style={{ padding: "8px 14px", borderTop: "1px solid #F0F0F0", background: "#FFFBEB" }}>
-              <div style={{ fontSize: 10, fontWeight: "bold", color: "#92400E", textTransform: "uppercase", letterSpacing: 1 }}>Observaciones</div>
+            <div style={{ padding: "8px 14px", borderTop: "1px solid #F0F0F0", background: NOSSA.warnBg }}>
+              <div style={{ fontSize: 10, fontWeight: "bold", color: NOSSA.warn, textTransform: "uppercase", letterSpacing: 1 }}>Observaciones</div>
               <div style={{ fontSize: 12, color: "#78350F", marginTop: 3 }}>{obs}</div>
             </div>
           )}
 
-          <div style={{ padding: "10px 14px", borderTop: "1px solid #F0F0F0", background: "#FAFAFA" }}>
+          <div style={{ padding: "10px 14px", borderTop: "1px solid #F0F0F0", background: NOSSA.cream }}>
             <button
               onClick={function () { toggleDespacho(fechaObrador, p); }}
-              style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px solid " + (sent ? "#38A169" : "#7C5C3B"), background: sent ? "#38A169" : "#fff", color: sent ? "#fff" : "#7C5C3B", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}
+              style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px solid " + (sent ? NOSSA.ok : NOSSA.aquaDark), background: sent ? NOSSA.ok : NOSSA.white, color: sent ? NOSSA.white : NOSSA.aquaDark, fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: S.font }}
             >{sent ? "Enviado" : "Marcar enviado"}</button>
           </div>
         </div>
@@ -966,39 +1085,39 @@ export default function NossaCafe() {
       <div style={S.page}>
         <div style={S.card}>
           {/* HEADER */}
-          <div style={{ background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "20px 20px 14px", color: "#fff" }}>
+          <div style={{ background: NOSSA.black, padding: "20px 20px 14px", color: NOSSA.white }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
               <div>
-                <div style={{ fontSize: 20, fontWeight: "bold", color: "#F5E6D3" }}>Obrador</div>
-                <div style={{ fontSize: 12, color: "#C8A882", fontStyle: "italic" }}>{new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })}</div>
+                <div style={{ fontSize: 12, fontWeight: "bold", letterSpacing: 2.5, color: NOSSA.aqua }}>nossa.</div>
+                <div style={{ fontSize: 20, fontWeight: "bold", color: NOSSA.white, marginTop: 2 }}>Obrador</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", marginTop: 2 }}>{new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })}</div>
               </div>
               <button style={S.ghost} onClick={function () { recargar(); setScreen("inicio"); }}>Salir</button>
             </div>
 
-            {/* Selector de fecha */}
-            <div style={{ marginTop: 14, background: "rgba(255,255,255,0.1)", borderRadius: 10, padding: "10px 12px" }}>
-              <div style={{ fontSize: 10, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#C8A882", marginBottom: 6 }}>
-                Fecha de cierre que estoy revisando
+            <div style={{ marginTop: 14, background: "rgba(255,255,255,0.07)", borderRadius: 10, padding: "10px 12px" }}>
+              <div style={{ fontSize: 10, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.2, color: "rgba(255,255,255,0.4)", marginBottom: 6 }}>
+                Fecha
               </div>
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                 <input
                   type="date"
                   value={fechaObrador}
                   onChange={function (e) { setFechaObrador(e.target.value); }}
-                  style={{ flex: 1, minWidth: 140, padding: "7px 9px", borderRadius: 8, border: "none", fontSize: 13, fontFamily: "Georgia, serif", background: "#fff", color: "#2D3748" }}
+                  style={{ flex: 1, minWidth: 140, padding: "7px 9px", borderRadius: 8, border: "none", fontSize: 13, fontFamily: S.font, background: NOSSA.white, color: NOSSA.charcoal }}
                 />
-                <button onClick={function () { setFechaObrador(fechaAyer()); }} style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 11, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}>Ayer</button>
-                <button onClick={function () { setFechaObrador(fechaHoy()); }}  style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.25)", color: "#fff", fontSize: 11, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}>Hoy</button>
+                <button onClick={function () { setFechaObrador(fechaAyer()); }} style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.15)", color: NOSSA.white, fontSize: 11, fontWeight: "bold", cursor: "pointer", fontFamily: S.font }}>Ayer</button>
+                <button onClick={function () { setFechaObrador(fechaHoy()); }}  style={{ padding: "7px 12px", borderRadius: 8, border: "none", background: "rgba(255,255,255,0.15)", color: NOSSA.white, fontSize: 11, fontWeight: "bold", cursor: "pointer", fontFamily: S.font }}>Hoy</button>
               </div>
             </div>
 
             <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
-              <span style={{ fontSize: 11, fontWeight: "bold", background: "rgba(255,255,255,0.25)", color: "#fff", padding: "4px 12px", borderRadius: 20 }}>{puntosEnConsolidado.length}/3 cerrados</span>
-              <span style={{ fontSize: 11, background: "rgba(255,255,255,0.15)", color: "#fff", padding: "4px 12px", borderRadius: 20 }}>{enviadosCount}/3 enviados</span>
-              {obradorLoading && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.15)", color: "#fff", padding: "4px 12px", borderRadius: 20 }}>Cargando...</span>}
+              <span style={{ fontSize: 11, fontWeight: "bold", background: NOSSA.aquaDark, color: NOSSA.white, padding: "4px 12px", borderRadius: 20 }}>{puntosEnConsolidado.length}/3 cerrados</span>
+              <span style={{ fontSize: 11, background: "rgba(255,255,255,0.12)", color: NOSSA.white, padding: "4px 12px", borderRadius: 20 }}>{enviadosCount}/3 enviados</span>
+              {obradorLoading && <span style={{ fontSize: 11, background: "rgba(255,255,255,0.12)", color: NOSSA.white, padding: "4px 12px", borderRadius: 20 }}>Cargando...</span>}
             </div>
             {puntosPendientes.length > 0 && (
-              <div style={{ marginTop: 10, background: "rgba(249,115,22,0.25)", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#FED7AA", fontWeight: "600" }}>
+              <div style={{ marginTop: 10, background: "rgba(217,119,6,0.2)", borderRadius: 10, padding: "8px 12px", fontSize: 12, color: "#FDE68A", fontWeight: "600" }}>
                 Sin cierre: {puntosPendientes.join(", ")}
               </div>
             )}
@@ -1007,69 +1126,101 @@ export default function NossaCafe() {
           {/* CUERPO */}
           <div style={{ padding: "16px 16px 32px", overflowY: "auto", maxHeight: "70vh" }}>
 
-            {/* SECCION 1: CONSOLIDADO GENERAL */}
+            {/* CONSOLIDADO GENERAL POR CATEGORIA */}
             <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#7C5C3B", marginBottom: 6 }}>
-                Consolidado general de produccion
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: NOSSA.aquaDark }}>
+                  Consolidado general
+                </div>
+                {totalGeneralCons > 0 && (
+                  <span style={{ fontSize: 12, fontWeight: "bold", color: NOSSA.aquaDark, background: NOSSA.aquaLight, padding: "2px 10px", borderRadius: 20 }}>{totalGeneralCons} und</span>
+                )}
               </div>
-              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 10, fontStyle: "italic" }}>
+              <div style={{ fontSize: 11, color: NOSSA.gray, marginBottom: 10 }}>
                 Suma de los puntos cerrados para el {fechaDisplay(fechaObrador)}.
               </div>
 
               {puntosEnConsolidado.length === 0 ? (
-                <div style={{ padding: 16, background: "#FFF7ED", border: "2px solid #FED7AA", borderRadius: 12, textAlign: "center", color: "#9A3412", fontSize: 13 }}>
+                <div style={{ padding: 16, background: NOSSA.warnBg, border: "2px solid #FDE68A", borderRadius: 12, textAlign: "center", color: "#92400E", fontSize: 13 }}>
                   Ningun punto cerro el {fechaDisplay(fechaObrador)} todavia.
                 </div>
+              ) : consolidadoList.length === 0 ? (
+                <div style={{ padding: 16, background: NOSSA.aquaLight, border: "2px solid " + NOSSA.aqua, borderRadius: 12, textAlign: "center", color: NOSSA.aquaDark, fontSize: 13 }}>
+                  Los puntos cerrados no registraron pedidos.
+                </div>
               ) : (
-                <div style={{ background: "#fff", border: "1px solid #E5E7EB", borderRadius: 12, overflow: "hidden" }}>
-
-                  {/* Produccion consolidada */}
-                  <div style={{ padding: "12px 14px", background: "#FFF8F0", borderBottom: "1px solid #F0F0F0" }}>
-                    <div style={{ fontSize: 12, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#7C5C3B" }}>
-                      Produccion ({produccionCons.length})
-                    </div>
-                  </div>
-                  {produccionCons.length === 0
-                    ? <div style={{ padding: "10px 14px", fontSize: 12, color: "#6B7280", fontStyle: "italic" }}>Sin produccion pendiente</div>
-                    : <div style={{ padding: "4px 14px 8px" }}>
-                        {produccionCons.map(function (it, i) { return renderItemConsolidado(it, "prod-" + i, "#7C5C3B"); })}
+                <div style={{ background: NOSSA.white, border: "1px solid " + NOSSA.grayLight, borderRadius: 14, overflow: "hidden" }}>
+                  {CATS_ORDER.map(function (catId) {
+                    var lista = consPorCat[catId];
+                    if (!lista || lista.length === 0) return null;
+                    var meta = CATS_META[catId];
+                    var catTotal = lista.reduce(function (s, it) { return s + it.total; }, 0);
+                    return (
+                      <div key={catId}>
+                        <div style={{ padding: "8px 14px", background: meta ? meta.bg : "#F9F9F9", borderBottom: "1px solid #F0F0F0" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: meta ? meta.color : NOSSA.gray }}>{meta ? meta.icon + " " : ""}{CAT_NOMBRE[catId] || catId}</span>
+                            <span style={{ fontSize: 11, fontWeight: "bold", color: meta ? meta.color : NOSSA.gray }}>{catTotal} und</span>
+                          </div>
+                        </div>
+                        <div style={{ padding: "2px 14px 6px" }}>
+                          {lista.map(function (it, i) {
+                            return (
+                              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: i < lista.length - 1 ? "1px solid #F7F7F7" : "none" }}>
+                                <span style={{ fontSize: 13, color: NOSSA.charcoal }}>{it.producto}</span>
+                                <span style={{ fontSize: 13, fontWeight: "bold", color: NOSSA.aquaDark }}>{it.total}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                  }
-
-                  {/* Pedidos consolidados, agrupados por categoria */}
-                  <div style={{ padding: "12px 14px", background: "#F5F3FF", borderTop: "1px solid #F0F0F0", borderBottom: "1px solid #F0F0F0" }}>
-                    <div style={{ fontSize: 12, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#5C4DB1" }}>
-                      Pedidos ({pedidosCons.length})
-                    </div>
-                  </div>
-                  {pedidosCons.length === 0
-                    ? <div style={{ padding: "10px 14px", fontSize: 12, color: "#6B7280", fontStyle: "italic" }}>Sin pedidos pendientes</div>
-                    : <div style={{ padding: "4px 14px 8px" }}>
-                        {Object.keys(pedidosConsPorCat).map(function (catId) {
-                          var lista = pedidosConsPorCat[catId];
-                          return (
-                            <div key={catId} style={{ marginBottom: 8 }}>
-                              <div style={{ fontSize: 11, fontWeight: "bold", color: "#9CA3AF", margin: "6px 0 2px" }}>{CAT_NOMBRE[catId] || catId}</div>
-                              {lista.map(function (it, i) { return renderItemConsolidado(it, catId + "-" + i, "#5C4DB1"); })}
-                            </div>
-                          );
-                        })}
+                    );
+                  })}
+                  {/* Categorias fuera de CATS_ORDER */}
+                  {Object.keys(consPorCat).filter(function (c) { return CATS_ORDER.indexOf(c) < 0; }).map(function (catId) {
+                    var lista = consPorCat[catId];
+                    var catTotal = lista.reduce(function (s, it) { return s + it.total; }, 0);
+                    return (
+                      <div key={catId}>
+                        <div style={{ padding: "8px 14px", background: "#F9F9F9", borderBottom: "1px solid #F0F0F0" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: NOSSA.gray }}>{CAT_NOMBRE[catId] || catId}</span>
+                            <span style={{ fontSize: 11, fontWeight: "bold", color: NOSSA.gray }}>{catTotal} und</span>
+                          </div>
+                        </div>
+                        <div style={{ padding: "2px 14px 6px" }}>
+                          {lista.map(function (it, i) {
+                            return (
+                              <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: i < lista.length - 1 ? "1px solid #F7F7F7" : "none" }}>
+                                <span style={{ fontSize: 13, color: NOSSA.charcoal }}>{it.producto}</span>
+                                <span style={{ fontSize: 13, fontWeight: "bold", color: NOSSA.aquaDark }}>{it.total}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                  }
+                    );
+                  })}
                 </div>
               )}
             </div>
 
-            {/* SECCION 2: DESPACHO POR PUNTO */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: "#5C4DB1", marginBottom: 8 }}>
+            {/* DESPACHO POR PUNTO */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1.5, color: NOSSA.charcoal, marginBottom: 8 }}>
                 Despacho por punto
               </div>
               {PUNTOS.map(renderDespachoPunto)}
             </div>
 
+            {/* ACCIONES */}
             <button
-              style={{ ...S.btn, background: "#4A5568", fontSize: 14 }}
+              style={{ ...S.btn, background: NOSSA.aquaDark, marginTop: 0 }}
+              onClick={copiarWhatsApp}
+            >Copiar resumen para WhatsApp</button>
+
+            <button
+              style={{ ...S.btn, background: NOSSA.charcoal }}
               onClick={function () { cargarObrador(fechaObrador); }}
             >{obradorLoading ? "Cargando..." : "Actualizar desde Sheets"}</button>
           </div>
@@ -1086,18 +1237,18 @@ export default function NossaCafe() {
     return (
       <div style={S.page}>
         <div style={{ ...S.card, padding: 0, overflow: "hidden" }}>
-          <div style={{ background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "18px 20px 0", color: "#fff" }}>
+          <div style={{ background: NOSSA.black, padding: "18px 20px 0", color: NOSSA.white }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ fontSize: 18, fontWeight: "bold", color: "#F5E6D3" }}>Panel Admin</div>
-                <div style={{ fontSize: 12, color: "#C8A882", fontStyle: "italic" }}>Nossa Cafe</div>
+                <div style={{ fontSize: 18, fontWeight: "bold", color: NOSSA.white }}>Panel Admin</div>
+                <div style={{ fontSize: 11, color: NOSSA.aqua, letterSpacing: 2 }}>nossa.</div>
               </div>
               <button style={S.ghost} onClick={function () { setScreen("inicio"); }}>Salir</button>
             </div>
           </div>
           <div style={{ display: "flex", overflowX: "auto", borderBottom: "2px solid #F0F0F0", background: "#FAFAFA" }}>
             {adminTabs.map(function (pair) {
-              return <button key={pair[0]} onClick={function () { setAdminTab(pair[0]); }} style={{ padding: "12px 14px", border: "none", background: "transparent", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", fontFamily: "Georgia, serif", color: adminTab === pair[0] ? "#7C5C3B" : "#9CA3AF", fontWeight: adminTab === pair[0] ? "bold" : "normal", borderBottom: adminTab === pair[0] ? "3px solid #7C5C3B" : "3px solid transparent" }}>{pair[1]}</button>;
+              return <button key={pair[0]} onClick={function () { setAdminTab(pair[0]); }} style={{ padding: "12px 14px", border: "none", background: "transparent", fontSize: 12, cursor: "pointer", whiteSpace: "nowrap", fontFamily: S.font, color: adminTab === pair[0] ? NOSSA.aquaDark : "#9CA3AF", fontWeight: adminTab === pair[0] ? "bold" : "normal", borderBottom: adminTab === pair[0] ? "3px solid " + NOSSA.aquaDark : "3px solid transparent" }}>{pair[1]}</button>;
             })}
           </div>
           <div style={{ padding: "16px 16px 32px", overflowY: "auto", maxHeight: "65vh" }}>
@@ -1106,9 +1257,9 @@ export default function NossaCafe() {
                 <div style={{ fontWeight: "bold", fontSize: 14, color: "#2D3748", marginBottom: 12 }}>Estado cierres hoy</div>
                 {PUNTOS.map(function (p) {
                   var ok = cierresEstado[p];
-                  return <div key={p} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: "#FAFAFA", borderRadius: 10, marginBottom: 8, borderLeft: "4px solid " + (ok ? "#38A169" : "#E2E8F0") }}><span style={{ fontSize: 14, fontWeight: "bold", color: "#2D3748" }}>{p}</span><span style={{ fontSize: 12, fontWeight: "bold", padding: "4px 12px", borderRadius: 20, background: ok ? "#DCFCE7" : "#FEF3C7", color: ok ? "#15803D" : "#92400E" }}>{ok ? "Completo" : "Pendiente"}</span></div>;
+                  return <div key={p} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px", background: NOSSA.cream, borderRadius: 10, marginBottom: 8, borderLeft: "4px solid " + (ok ? NOSSA.ok : NOSSA.grayLight) }}><span style={{ fontSize: 14, fontWeight: "bold", color: NOSSA.charcoal }}>{p}</span><span style={{ fontSize: 12, fontWeight: "bold", padding: "4px 12px", borderRadius: 20, background: ok ? NOSSA.okBg : NOSSA.warnBg, color: ok ? NOSSA.ok : NOSSA.warn }}>{ok ? "Completo" : "Pendiente"}</span></div>;
                 })}
-                <button style={{ ...S.btn, background: "#4A5568", fontSize: 14 }} onClick={recargar}>{cargando ? "Cargando..." : "Actualizar desde Sheets"}</button>
+                <button style={{ ...S.btn, background: NOSSA.charcoal, fontSize: 14 }} onClick={recargar}>{cargando ? "Cargando..." : "Actualizar desde Sheets"}</button>
               </div>
             )}
             {adminTab === "minmax" && (
@@ -1119,7 +1270,7 @@ export default function NossaCafe() {
                   </div>
                   <button
                     onClick={function () { cargarProductos({ incluirInactivos: mostrarInactivos }); }}
-                    style={{ background: "#EDF2F7", border: "none", padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontFamily: "Georgia, serif" }}
+                    style={{ background: "#EDF2F7", border: "none", padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontFamily: S.font }}
                   >Actualizar</button>
                 </div>
 
@@ -1129,7 +1280,7 @@ export default function NossaCafe() {
                     var sel = adminPunto === p;
                     return (
                       <button key={p} onClick={function () { setAdminPunto(p); setEditProd(null); setEditPunto(null); }}
-                        style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: "1.5px solid " + (sel ? "#7C5C3B" : "#E2E8F0"), background: sel ? "#7C5C3B" : "#fff", color: sel ? "#fff" : "#4A5568", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}>
+                        style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: "1.5px solid " + (sel ? NOSSA.aquaDark : "#E2E8F0"), background: sel ? NOSSA.aquaDark : "#fff", color: sel ? "#fff" : "#4A5568", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: S.font }}>
                         {p}
                       </button>
                     );
@@ -1153,25 +1304,25 @@ export default function NossaCafe() {
                       setAMin("");
                       setAMax("");
                     }}
-                    style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px dashed #7C5C3B", background: "#FFF8F4", color: "#7C5C3B", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", marginBottom: 14 }}
+                    style={{ width: "100%", padding: "10px", borderRadius: 10, border: "1.5px dashed " + NOSSA.aquaDark, background: NOSSA.aquaPale, color: NOSSA.aquaDark, fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: S.font, marginBottom: 14 }}
                   >+ Anadir producto</button>
                 ) : (
-                  <div style={{ background: "#FFF8F4", border: "2px solid #7C5C3B", borderRadius: 12, padding: 12, marginBottom: 14 }}>
-                    <div style={{ fontWeight: "bold", fontSize: 12, color: "#7C5C3B", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Nuevo producto</div>
+                  <div style={{ background: NOSSA.aquaPale, border: "2px solid " + NOSSA.aquaDark, borderRadius: 12, padding: 12, marginBottom: 14 }}>
+                    <div style={{ fontWeight: "bold", fontSize: 12, color: NOSSA.aquaDark, marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Nuevo producto</div>
 
                     <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Categoria</div>
                     <select value={aCat} onChange={function (e) { setACat(e.target.value); }}
-                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}>
+                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: S.font, background: "#fff" }}>
                       {CATS_ORDER.map(function (id) { return <option key={id} value={id}>{CATS_META[id].nombre}</option>; })}
                     </select>
 
                     <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Nombre</div>
                     <input type="text" value={aName} onChange={function (e) { setAName(e.target.value); }} placeholder="Ej: Croissant chocolate"
-                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
+                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: S.font, boxSizing: "border-box" }} />
 
                     <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Punto</div>
                     <select value={aPunto} onChange={function (e) { setAPunto(e.target.value); }}
-                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}>
+                      style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: S.font, background: "#fff" }}>
                       <option value="Todos">Todos los puntos (crea 3 filas)</option>
                       <option value="Centro">Centro</option>
                       <option value="Primavera">Primavera</option>
@@ -1182,12 +1333,12 @@ export default function NossaCafe() {
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Min</div>
                         <input type="number" min="0" value={aMin} onChange={function (e) { setAMin(e.target.value); }}
-                          style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
+                          style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: S.font, boxSizing: "border-box" }} />
                       </div>
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Max</div>
                         <input type="number" min="0" value={aMax} onChange={function (e) { setAMax(e.target.value); }}
-                          style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: "Georgia, serif", boxSizing: "border-box" }} />
+                          style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, fontFamily: S.font, boxSizing: "border-box" }} />
                       </div>
                     </div>
 
@@ -1211,10 +1362,10 @@ export default function NossaCafe() {
                             alert("Error: " + ((r && r.error) || "no se pudo guardar"));
                           }
                         }}
-                        style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#7C5C3B", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", opacity: savingProd ? 0.6 : 1 }}
+                        style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: NOSSA.aquaDark, color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: S.font, opacity: savingProd ? 0.6 : 1 }}
                       >{savingProd ? "Guardando..." : "Guardar"}</button>
                       <button onClick={function () { setAdding(false); }}
-                        style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1.5px solid #CBD5E0", background: "#fff", color: "#4A5568", fontSize: 13, cursor: "pointer", fontFamily: "Georgia, serif" }}
+                        style={{ flex: 1, padding: "10px", borderRadius: 8, border: "1.5px solid #CBD5E0", background: "#fff", color: "#4A5568", fontSize: 13, cursor: "pointer", fontFamily: S.font }}
                       >Cancelar</button>
                     </div>
                   </div>
@@ -1258,13 +1409,13 @@ export default function NossaCafe() {
                                         if (r && r.success) await cargarProductos({ incluirInactivos: mostrarInactivos });
                                         else alert("Error: " + ((r && r.error) || "no se pudo reactivar"));
                                       }}
-                                      style={{ background: "#DCFCE7", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif", color: "#15803D" }}
+                                      style={{ background: "#DCFCE7", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: S.font, color: "#15803D" }}
                                     >Reactivar</button>
                                   ) : (
                                     <>
                                       <button title="Editar"
                                         onClick={function () { setEditProd(prod.producto); setEditPunto(prod.punto); setEMin(String(prod.min)); setEMax(String(prod.max)); }}
-                                        style={{ background: "#EDF2F7", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif" }}
+                                        style={{ background: "#EDF2F7", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: S.font }}
                                       >Editar</button>
                                       <button title="Eliminar"
                                         onClick={async function () {
@@ -1275,7 +1426,7 @@ export default function NossaCafe() {
                                           if (r && r.success) await cargarProductos({ incluirInactivos: mostrarInactivos });
                                           else alert("Error: " + ((r && r.error) || "no se pudo eliminar"));
                                         }}
-                                        style={{ background: "#FEE2E2", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif", color: "#991B1B" }}
+                                        style={{ background: "#FEE2E2", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: S.font, color: "#991B1B" }}
                                       >X</button>
                                     </>
                                   )}
@@ -1305,10 +1456,10 @@ export default function NossaCafe() {
                                           alert("Error: " + ((r && r.error) || "no se pudo actualizar"));
                                         }
                                       }}
-                                      style={{ background: "#38A169", color: "#fff", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: "bold", opacity: savingProd ? 0.6 : 1 }}
+                                      style={{ background: NOSSA.ok, color: "#fff", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 13, fontWeight: "bold", opacity: savingProd ? 0.6 : 1 }}
                                     >Guardar</button>
                                     <button onClick={function () { setEditProd(null); setEditPunto(null); }}
-                                      style={{ background: "#E2E8F0", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: "Georgia, serif" }}
+                                      style={{ background: "#E2E8F0", border: "none", padding: "6px 10px", borderRadius: 8, cursor: "pointer", fontSize: 12, fontFamily: S.font }}
                                     >Cancelar</button>
                                   </div>
                                 </div>
@@ -1340,7 +1491,7 @@ export default function NossaCafe() {
                   type="date"
                   value={corregirFecha}
                   onChange={function (e) { setCorregirFecha(e.target.value); setCorregirCierre(null); setCorregirMsg(""); }}
-                  style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: S.font, boxSizing: "border-box" }}
                 />
 
                 {/* Selector punto */}
@@ -1350,7 +1501,7 @@ export default function NossaCafe() {
                     var sel = corregirPunto === p;
                     return (
                       <button key={p} onClick={function () { setCorregirPunto(p); setCorregirCierre(null); setCorregirMsg(""); }}
-                        style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: "1.5px solid " + (sel ? "#7C5C3B" : "#E2E8F0"), background: sel ? "#7C5C3B" : "#fff", color: sel ? "#fff" : "#4A5568", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}>
+                        style={{ flex: 1, padding: "8px 4px", borderRadius: 8, border: "1.5px solid " + (sel ? NOSSA.aquaDark : "#E2E8F0"), background: sel ? NOSSA.aquaDark : "#fff", color: sel ? "#fff" : "#4A5568", fontSize: 12, fontWeight: "bold", cursor: "pointer", fontFamily: S.font }}>
                         {p}
                       </button>
                     );
@@ -1360,19 +1511,19 @@ export default function NossaCafe() {
                 <button
                   disabled={corregirLoading}
                   onClick={buscarCierreParaCorregir}
-                  style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: "#4A5568", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", opacity: corregirLoading ? 0.6 : 1, marginBottom: 12 }}
+                  style={{ width: "100%", padding: "11px", borderRadius: 10, border: "none", background: NOSSA.charcoal, color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: S.font, opacity: corregirLoading ? 0.6 : 1, marginBottom: 12 }}
                 >{corregirLoading ? "Buscando..." : "Buscar cierre"}</button>
 
                 {/* Mensaje */}
                 {corregirMsg && (
-                  <div style={{ padding: 10, background: corregirMsgOk ? "#F0FFF4" : "#FEF3C7", border: "1px solid " + (corregirMsgOk ? "#38A169" : "#F59E0B"), borderRadius: 10, color: corregirMsgOk ? "#15803D" : "#92400E", fontSize: 12, marginBottom: 12 }}>
+                  <div style={{ padding: 10, background: corregirMsgOk ? "#F0FFF4" : "#FEF3C7", border: "1px solid " + (corregirMsgOk ? NOSSA.ok : "#F59E0B"), borderRadius: 10, color: corregirMsgOk ? "#15803D" : "#92400E", fontSize: 12, marginBottom: 12 }}>
                     {corregirMsg}
                   </div>
                 )}
 
                 {/* Resumen del cierre */}
                 {corregirCierre && corregirCierre.found && (
-                  <div style={{ background: "#fff", border: "2px solid " + (corregirCierre.datos && corregirCierre.datos.anulado ? "#FED7AA" : "#7C5C3B"), borderRadius: 12, padding: 14, marginBottom: 10 }}>
+                  <div style={{ background: "#fff", border: "2px solid " + (corregirCierre.datos && corregirCierre.datos.anulado ? "#FED7AA" : NOSSA.aquaDark), borderRadius: 12, padding: 14, marginBottom: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
                       <div style={{ fontSize: 14, fontWeight: "bold", color: "#2D3748" }}>{corregirCierre.punto} - {fechaDisplay(corregirCierre.fecha)}</div>
                       {corregirCierre.datos && corregirCierre.datos.anulado
@@ -1399,7 +1550,7 @@ export default function NossaCafe() {
                             return (
                               <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: i < items.length - 1 ? "1px solid #F0F0F0" : "none" }}>
                                 <span style={{ fontSize: 12, color: "#2D3748" }}>{it.nombre}</span>
-                                <span style={{ fontSize: 12, fontWeight: "bold", color: "#7C5C3B" }}>{it.cantidad} und</span>
+                                <span style={{ fontSize: 12, fontWeight: "bold", color: NOSSA.aquaDark }}>{it.cantidad} und</span>
                               </div>
                             );
                           })}
@@ -1412,7 +1563,7 @@ export default function NossaCafe() {
                       <button
                         disabled={corregirLoading}
                         onClick={anularCierreActual}
-                        style={{ width: "100%", marginTop: 12, padding: "11px", borderRadius: 10, border: "none", background: "#DC2626", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif", opacity: corregirLoading ? 0.6 : 1 }}
+                        style={{ width: "100%", marginTop: 12, padding: "11px", borderRadius: 10, border: "none", background: "#DC2626", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: S.font, opacity: corregirLoading ? 0.6 : 1 }}
                       >Anular cierre</button>
                     )}
                   </div>
@@ -1436,9 +1587,9 @@ export default function NossaCafe() {
     return (
       <div style={S.page}>
         <div style={{ ...S.card, maxWidth: 360 }}>
-          <div style={{ background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "28px 24px", textAlign: "center", color: "#fff" }}>
+          <div style={{ background: NOSSA.black, padding: "28px 24px", textAlign: "center", color: NOSSA.white }}>
             <div style={{ fontSize: 44, marginBottom: 6 }}>🔒</div>
-            <div style={{ fontSize: 20, fontWeight: "bold", color: "#F5E6D3" }}>Administrador</div>
+            <div style={{ fontSize: 20, fontWeight: "bold", color: NOSSA.white }}>Administrador</div>
           </div>
           <div style={S.body}>
             <div style={S.lbl}>Contrasena</div>
@@ -1478,12 +1629,12 @@ export default function NossaCafe() {
       <div style={S.page}>
         <div style={{ ...S.card, padding: 0, overflow: "hidden" }}>
           {/* Header */}
-          <div style={{ padding: "16px 16px 12px", color: "#fff", background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)" }}>
+          <div style={{ padding: "16px 16px 12px", color: NOSSA.white, background: NOSSA.black }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <button style={S.ghost} onClick={function () { setScreen("inicio"); }}>Atras</button>
-              <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", padding: "3px 10px", borderRadius: 20 }}>{selectedPoint}</span>
+              <span style={{ fontSize: 11, background: NOSSA.aquaDark, padding: "3px 10px", borderRadius: 20, color: NOSSA.white }}>{selectedPoint}</span>
             </div>
-            <div style={{ fontSize: 20, fontWeight: "bold", textAlign: "center", color: "#F5E6D3" }}>Pedido para Obrador</div>
+            <div style={{ fontSize: 20, fontWeight: "bold", textAlign: "center", color: NOSSA.white }}>Pedido para Obrador</div>
             <div style={{ textAlign: "center", fontSize: 11, opacity: 0.75, marginTop: 4 }}>
               {totalConCantidad > 0 ? totalConCantidad + " productos con pedido" : "Escribe las cantidades que necesitas"}
             </div>
@@ -1524,7 +1675,7 @@ export default function NossaCafe() {
                             fontSize: 16, fontWeight: "bold", outline: "none",
                             color: hasQty ? meta.color : "#9CA3AF",
                             background: hasQty ? "#fff" : "#FAFAFA",
-                            fontFamily: "Georgia, serif",
+                            fontFamily: S.font,
                           }}
                         />
                       </div>
@@ -1544,7 +1695,7 @@ export default function NossaCafe() {
                 value={observaciones}
                 onChange={function (e) { setObservaciones(e.target.value); }}
                 rows={2}
-                style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 12, fontFamily: "Georgia, serif", boxSizing: "border-box", resize: "vertical" }}
+                style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 12, fontFamily: S.font, boxSizing: "border-box", resize: "vertical" }}
               />
             </div>
             {saving && <div style={{ textAlign: "center", color: "#6B7280", fontSize: 12, marginBottom: 8 }}>Guardando en Sheets...</div>}
@@ -1576,13 +1727,13 @@ export default function NossaCafe() {
     return (
       <div style={S.page}>
         <div style={S.card}>
-          <div style={{ background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "32px 24px 20px", textAlign: "center", color: "#fff" }}>
+          <div style={{ background: NOSSA.black, padding: "32px 24px 20px", textAlign: "center", color: NOSSA.white }}>
             <div style={{ fontSize: 48 }}>{confirmado ? "✓" : "!"}</div>
-            <div style={{ fontSize: 22, fontWeight: "bold", color: "#F5E6D3" }}>{pedRes.length === 0 ? "Cierre sin pedidos" : pedRes.length + " productos pedidos"}</div>
-            <div style={{ fontSize: 13, color: "#C8A882", marginTop: 4 }}>{ptRes} - {hrRes} - {respRes || "--"}</div>
+            <div style={{ fontSize: 22, fontWeight: "bold", color: NOSSA.white }}>{pedRes.length === 0 ? "Cierre sin pedidos" : pedRes.length + " productos pedidos"}</div>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 4 }}>{ptRes} - {hrRes} - {respRes || "--"}</div>
             {confirmado
-              ? <div style={{ color: "#C6F6D5", fontSize: 12, marginTop: 8 }}>Confirmado en Google Sheets</div>
-              : <div style={{ color: "#FED7D7", fontSize: 12, marginTop: 8 }}>Enviado — verificando en Sheets</div>}
+              ? <div style={{ color: NOSSA.aqua, fontSize: 12, marginTop: 8 }}>Confirmado en Google Sheets</div>
+              : <div style={{ color: "#FCA5A5", fontSize: 12, marginTop: 8 }}>Enviado — verificando en Sheets</div>}
           </div>
           <div style={S.body}>
             {pedRes.length > 0 && (
@@ -1593,19 +1744,19 @@ export default function NossaCafe() {
                       <div>
                         <span style={{ fontSize: 13, color: "#2D3748" }}>{item.producto}</span>
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: "bold", color: "#7C5C3B" }}>{item.cantidad} und</span>
+                      <span style={{ fontSize: 13, fontWeight: "bold", color: NOSSA.aquaDark }}>{item.cantidad} und</span>
                     </div>
                   );
                 })}
               </div>
             )}
-            {pedRes.length === 0 && <div style={{ padding: 14, background: "#F0FFF4", borderRadius: 12, textAlign: "center", color: "#38A169", fontSize: 14, marginBottom: 16 }}>Cierre registrado sin pedidos</div>}
-            <div style={{ padding: 14, background: "#F0FFF4", borderRadius: 14, border: "2px solid #C6F6D5", marginBottom: 16 }}>
-              <div style={{ fontWeight: "bold", fontSize: 13, color: "#276749", marginBottom: 8 }}>Mensaje para WhatsApp</div>
-              <textarea style={{ width: "100%", borderRadius: 8, border: "1px solid #C6F6D5", padding: 10, fontSize: 11, background: "#fff", resize: "none", fontFamily: "monospace", boxSizing: "border-box", lineHeight: 1.6 }} readOnly value={msgRes} rows={Math.min(14, msgRes.split("\n").length + 2)} />
-              <button style={{ width: "100%", padding: 11, borderRadius: 10, border: "none", background: "#38A169", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", marginTop: 8 }} onClick={function () { if (navigator.clipboard) navigator.clipboard.writeText(msgRes); alert("Copiado!"); }}>Copiar mensaje</button>
+            {pedRes.length === 0 && <div style={{ padding: 14, background: NOSSA.aquaLight, borderRadius: 12, textAlign: "center", color: NOSSA.aquaDark, fontSize: 14, marginBottom: 16 }}>Cierre registrado sin pedidos</div>}
+            <div style={{ padding: 14, background: NOSSA.aquaLight, borderRadius: 14, border: "2px solid " + NOSSA.aqua, marginBottom: 16 }}>
+              <div style={{ fontWeight: "bold", fontSize: 13, color: NOSSA.aquaDark, marginBottom: 8 }}>Mensaje para WhatsApp</div>
+              <textarea style={{ width: "100%", borderRadius: 8, border: "1px solid " + NOSSA.aqua, padding: 10, fontSize: 11, background: NOSSA.white, resize: "none", fontFamily: "monospace", boxSizing: "border-box", lineHeight: 1.6 }} readOnly value={msgRes} rows={Math.min(14, msgRes.split("\n").length + 2)} />
+              <button style={{ width: "100%", padding: 11, borderRadius: 10, border: "none", background: NOSSA.aquaDark, color: NOSSA.white, fontSize: 13, fontWeight: "bold", cursor: "pointer", marginTop: 8 }} onClick={function () { if (navigator.clipboard) navigator.clipboard.writeText(msgRes); alert("Copiado!"); }}>Copiar mensaje</button>
             </div>
-            <button style={{ ...S.btn, background: "#4A5568" }} onClick={reiniciar}>Nuevo cierre</button>
+            <button style={{ ...S.btn, background: NOSSA.charcoal }} onClick={reiniciar}>Nuevo cierre</button>
           </div>
         </div>
       </div>
@@ -1621,13 +1772,12 @@ export default function NossaCafe() {
     <div style={S.page}>
       <div style={S.card}>
         <div style={S.hero}>
-          <div style={{ fontSize: 44, marginBottom: 8 }}>☕</div>
-          <div style={{ fontSize: 24, fontWeight: "bold", letterSpacing: 1.5, color: "#F5E6D3" }}>Nossa Cafe</div>
-          <div style={{ fontSize: 13, color: "#C8A882", marginTop: 4, fontStyle: "italic" }}>Cierre de turno</div>
+          <div style={{ fontSize: 28, fontWeight: "bold", letterSpacing: 3, color: NOSSA.aqua, marginBottom: 4 }}>nossa.</div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 4, letterSpacing: 1 }}>Cierre de turno</div>
         </div>
         <div style={S.body}>
 
-          <button style={{ ...S.btn, marginTop: 8, background: "linear-gradient(135deg,#334155,#1E293B)" }} onClick={function () { recargar(); setScreen("obrador"); }}>
+          <button style={{ ...S.btn, marginTop: 8, background: NOSSA.aquaDark }} onClick={function () { recargar(); setScreen("obrador"); }}>
             Entrar como Obrador
           </button>
 
@@ -1639,9 +1789,9 @@ export default function NossaCafe() {
             {PUNTOS.map(function (p, i) {
               var ok = cierresEstado[p];
               return (
-                <div key={p} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 14px", borderBottom: i < 2 ? "1px solid #F3F4F6" : "none", background: ok ? "#F0FFF4" : "#FAFAFA" }}>
-                  <span style={{ fontSize: 13, fontWeight: "600", color: "#2D3748" }}>{p}</span>
-                  <span style={{ fontSize: 11, fontWeight: "bold", color: ok ? "#15803D" : "#92400E", background: ok ? "#DCFCE7" : "#FEF3C7", padding: "3px 10px", borderRadius: 20 }}>{ok ? "Completo" : "Pendiente"}</span>
+                <div key={p} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 14px", borderBottom: i < 2 ? "1px solid #F3F4F6" : "none", background: ok ? NOSSA.aquaPale : "#FAFAFA" }}>
+                  <span style={{ fontSize: 13, fontWeight: "600", color: NOSSA.charcoal }}>{p}</span>
+                  <span style={{ fontSize: 11, fontWeight: "bold", color: ok ? NOSSA.ok : NOSSA.warn, background: ok ? NOSSA.okBg : NOSSA.warnBg, padding: "3px 10px", borderRadius: 20 }}>{ok ? "Completo" : "Pendiente"}</span>
                 </div>
               );
             })}
@@ -1658,17 +1808,18 @@ export default function NossaCafe() {
                   onClick={function () { setSelectedPoint(p); }}
                   style={{
                     flex: 1, padding: "12px 6px", borderRadius: 12,
-                    border: "2px solid " + (activo ? "#7C5C3B" : cerrado ? "#38A169" : "#E5D8CC"),
-                    background: activo ? "#7C5C3B" : "#FFF8F4",
+                    border: "2px solid " + (activo ? NOSSA.aquaDark : cerrado ? NOSSA.ok : NOSSA.grayLight),
+                    background: activo ? NOSSA.aquaDark : NOSSA.white,
                     cursor: "pointer", fontSize: 13, fontWeight: "bold",
-                    color: activo ? "#fff" : "#7C5C3B",
+                    color: activo ? NOSSA.white : NOSSA.charcoal,
                     position: "relative",
-                    boxShadow: activo ? "0 2px 8px rgba(124,92,59,0.4)" : "none",
+                    boxShadow: activo ? "0 2px 8px rgba(107,184,176,0.4)" : "none",
+                    fontFamily: S.font,
                   }}
                 >
                   {p}
                   {cerrado && (
-                    <span style={{ position: "absolute", top: -6, right: -6, background: "#38A169", color: "#fff", borderRadius: "50%", width: 16, height: 16, fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>v</span>
+                    <span style={{ position: "absolute", top: -6, right: -6, background: NOSSA.ok, color: NOSSA.white, borderRadius: "50%", width: 16, height: 16, fontSize: 9, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold" }}>v</span>
                   )}
                 </button>
               );
@@ -1677,9 +1828,9 @@ export default function NossaCafe() {
 
           {/* Punto ya cerrado hoy */}
           {puntoCerrado ? (
-            <div style={{ background: "#FFF7ED", border: "2px solid #F97316", borderRadius: 14, padding: "14px", margin: "12px 0" }}>
+            <div style={{ background: NOSSA.warnBg, border: "2px solid #F97316", borderRadius: 14, padding: "14px", margin: "12px 0" }}>
               <div style={{ fontWeight: "bold", fontSize: 14, color: "#92400E", marginBottom: 4 }}>Este punto ya realizo el cierre hoy</div>
-              <div style={{ fontSize: 12, color: "#6B7280" }}>Registrado en Google Sheets. No se permiten duplicados.</div>
+              <div style={{ fontSize: 12, color: NOSSA.gray }}>Registrado en Google Sheets. No se permiten duplicados.</div>
             </div>
           ) : (
             <div>
