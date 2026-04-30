@@ -40,7 +40,7 @@ const CAT_NOMBRE = (function () {
 const PRODUCTOS_FALLBACK_BASE = [
   // Pasteleria
   { categoria: "pasteleria", producto: "Pastel pollo", min: 12, max: 18 },
-  { categoria: "pasteleria", producto: "Almojavanas", min: 2, max: 5 },
+  { categoria: "pasteleria", producto: "Almojabanas", min: 2, max: 5 },
   { categoria: "pasteleria", producto: "Galleta avena", min: 3, max: 6 },
   { categoria: "pasteleria", producto: "Galleta macadamia", min: 3, max: 6 },
   { categoria: "pasteleria", producto: "Galleta chocolate", min: 2, max: 4 },
@@ -52,7 +52,7 @@ const PRODUCTOS_FALLBACK_BASE = [
   { categoria: "pasteleria", producto: "Torta zanahoria", min: 6, max: 10 },
   { categoria: "pasteleria", producto: "Torta chocolate", min: 6, max: 10 },
   { categoria: "pasteleria", producto: "Torta naranja", min: 2, max: 6 },
-  { categoria: "pasteleria", producto: "Torta almojavana", min: 2, max: 6 },
+  { categoria: "pasteleria", producto: "Torta almojabana", min: 2, max: 6 },
   { categoria: "pasteleria", producto: "Tarta cafe", min: 4, max: 8 },
   { categoria: "pasteleria", producto: "Tarta arandanos", min: 6, max: 12 },
   { categoria: "pasteleria", producto: "Cheesecake lulo", min: 3, max: 7 },
@@ -62,10 +62,10 @@ const PRODUCTOS_FALLBACK_BASE = [
   { categoria: "pasteleria", producto: "Milhojas arequipe", min: 5, max: 8 },
   { categoria: "pasteleria", producto: "Milhojas limon", min: 5, max: 8 },
   { categoria: "pasteleria", producto: "Cocos", min: 3, max: 6 },
-  { categoria: "pasteleria", producto: "Fresas und", min: 3, max: 8 },
+  { categoria: "pasteleria", producto: "Fresas", min: 3, max: 8 },
   { categoria: "pasteleria", producto: "Osos", min: 8, max: 12 },
   // Cafeteria
-  { categoria: "cafeteria", producto: "Crema whisky", min: 1, max: 1 },
+  { categoria: "cafeteria", producto: "baileys", min: 1, max: 1 },
   { categoria: "cafeteria", producto: "Hierbabuena", min: 1, max: 1 },
   { categoria: "cafeteria", producto: "Tarro aro fresa", min: 1, max: 1 },
   { categoria: "cafeteria", producto: "Tarro aro papaya", min: 1, max: 1 },
