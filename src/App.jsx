@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 
 const DEFAULT_APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbyxs7uys-3iaRXEzYTBJLJRX2KIdjiixphwqSxUDvlyJykmrZOL2hNXGqq_I7KLUvCb0Q/exec";
@@ -179,7 +179,7 @@ function normalizarItemsCierre(datos) {
   }
 
   var bag = {};
-  ["p", "pedido", "pedidos", "produccion"].forEach(function (key) {
+  ["p", "pedido", "pedidos", "produccion", "pedidoManual"].forEach(function (key) {
     var arr = datos[key];
     if (!Array.isArray(arr)) return;
     arr.forEach(function (it) {
@@ -189,6 +189,18 @@ function normalizarItemsCierre(datos) {
       }
     });
   });
+
+  // Handle compact pm tuples: [[producto, categoria, cantidad, nota], ...]
+  if (Array.isArray(datos.pm)) {
+    datos.pm.forEach(function (tuple) {
+      if (!Array.isArray(tuple) || tuple.length < 3) return;
+      var nombre   = String(tuple[0] || "");
+      var cantidad = Number(tuple[2]) || 0;
+      if (nombre && cantidad > 0) {
+        bag[nombre] = (bag[nombre] || 0) + cantidad;
+      }
+    });
+  }
 
   return Object.keys(bag).map(function (nombre) {
     return { nombre: nombre, cantidad: bag[nombre] };
@@ -392,85 +404,12 @@ var S = {
   link:  { display: "block", width: "100%", marginTop: 12, padding: "10px", background: "transparent", border: "none", color: "#9CA3AF", fontSize: 12, cursor: "pointer", fontFamily: "Georgia, serif", textDecoration: "underline" },
 };
 
-// ─── PRODUCT ROW ──────────────────────────────────────────────────────────────
-function ProductRow({ prod, stocks, setStocks, idx, allProds, inputRefs, freshInput }) {
-  var sVal    = stocks[prod.nombre];
-  var display = sVal !== undefined ? String(sVal) : "";
-  var filled  = sVal !== undefined;
-  var pedir   = !filled ? null : sVal > prod.max ? "OVER" : sVal <= prod.min ? Math.max(0, prod.max - sVal) : 0;
-  var isOver  = pedir === "OVER";
-  var isAlert = filled && !isOver && typeof pedir === "number" && pedir > 0;
-  var isOk    = filled && !isOver && pedir === 0;
-  var bc = isOver ? "#DD6B20" : isAlert ? "#E53E3E" : isOk ? "#38A169" : "#E2E8F0";
-  var tc = isOver ? "#DD6B20" : isAlert ? "#E53E3E" : isOk ? "#38A169" : "#2D3748";
-
-  var incr = useCallback(function () {
-    setStocks(function (p) { var r = Object.assign({}, p); r[prod.nombre] = Math.max(0, (p[prod.nombre] !== undefined ? p[prod.nombre] : 0) + 1); return r; });
-  }, [prod.nombre]);
-
-  var decr = useCallback(function () {
-    setStocks(function (p) { var r = Object.assign({}, p); r[prod.nombre] = Math.max(0, (p[prod.nombre] !== undefined ? p[prod.nombre] : 0) - 1); return r; });
-  }, [prod.nombre]);
-
-  function commit(raw) {
-    if (raw === "" || raw === "-") return;
-    var n = Math.max(0, parseInt(raw) || 0);
-    setStocks(function (p) { var r = Object.assign({}, p); r[prod.nombre] = n; return r; });
-  }
-
-  function onChange(e) {
-    var raw = e.target.value;
-    if (freshInput.current[prod.nombre]) { freshInput.current[prod.nombre] = false; raw = raw.replace(/^0+/, "") || "0"; }
-    commit(raw);
-  }
-  function onFocus(e)  { e.target.select(); freshInput.current[prod.nombre] = true; }
-  function onBlur(e)   { freshInput.current[prod.nombre] = false; commit(e.target.value); }
-  function onKeyDown(e) {
-    if (e.key !== "Enter") return;
-    e.preventDefault();
-    freshInput.current[prod.nombre] = false;
-    var nxt = allProds[idx + 1];
-    if (nxt && inputRefs.current[nxt.nombre]) inputRefs.current[nxt.nombre].focus();
-    else e.target.blur();
-  }
-
-  return (
-    <div style={{ padding: "10px 14px", borderBottom: "1px solid #F0F0F0", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 6, background: isOver ? "#FFFAF0" : isAlert ? "#FFF5F5" : isOk ? "#F0FFF4" : "#FAFAFA", borderLeft: "4px solid " + bc }}>
-      <div style={{ flex: 1, minWidth: 100 }}>
-        <div style={{ fontSize: 13, fontWeight: "bold", color: "#2D3748" }}>{prod.nombre}</div>
-        <div style={{ fontSize: 10, color: "#9CA3AF", marginTop: 1 }}>Min {prod.min} Max {prod.max}</div>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-        <button style={{ width: 36, height: 36, borderRadius: 8, border: "2px solid #E2E8F0", background: "#F7FAFC", cursor: "pointer", fontSize: 18, fontWeight: "bold", color: "#4A5568" }} onClick={decr}>-</button>
-        <input
-          ref={function (el) { inputRefs.current[prod.nombre] = el; }}
-          className="prod-input"
-          style={{ width: 54, height: 36, textAlign: "center", borderRadius: 8, border: "2px solid " + bc, fontSize: 18, fontWeight: "bold", outline: "none", color: tc }}
-          type="number" inputMode="numeric" min="0" placeholder="?"
-          value={display}
-          onChange={onChange} onFocus={onFocus} onBlur={onBlur} onKeyDown={onKeyDown}
-          enterKeyHint="next"
-        />
-        <button style={{ width: 36, height: 36, borderRadius: 8, border: "2px solid #E2E8F0", background: "#F7FAFC", cursor: "pointer", fontSize: 18, fontWeight: "bold", color: "#4A5568" }} onClick={incr}>+</button>
-      </div>
-      <div style={{ width: "100%", fontSize: 11, fontWeight: "bold", paddingLeft: 2 }}>
-        {isOver  && <span style={{ color: "#DD6B20" }}>Sobre maximo ({prod.max})</span>}
-        {isAlert && <span style={{ color: "#E53E3E" }}>Pedir {pedir} und</span>}
-        {isOk    && <span style={{ color: "#38A169" }}>OK</span>}
-      </div>
-    </div>
-  );
-}
-
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 export default function NossaCafe() {
   var [screen, setScreen]               = useState("inicio");
   var [selectedPoint, setSelectedPoint] = useState(null);   // NUNCA se vuelve null durante el flujo
   var [responsable, setResponsable]     = useState("");
   var [hora, setHora]                   = useState(horaActual);
-  var [catIdx, setCatIdx]               = useState(0);
-  var [skipped, setSkipped]             = useState({});
-  var [stocks, setStocks]               = useState({});
   var [cierresEstado, setCierresEstado] = useState({ Centro: false, Primavera: false, CF: false });
   var [cargando, setCargando]           = useState(false);
   var [saving, setSaving]               = useState(false);
@@ -478,6 +417,19 @@ export default function NossaCafe() {
   var [adminPass, setAdminPass]         = useState("");
   var [adminErr, setAdminErr]           = useState(false);
   var [adminTab, setAdminTab]           = useState("cierres");
+
+  // ── Pedido manual: lista de items que la tienda pide al Obrador ─────────────
+  // Cada item: { producto, categoria, cantidad, nota }
+  var [pedidoManual, setPedidoManual]   = useState([]);
+  var [observaciones, setObservaciones] = useState("");
+  // Form para agregar un item al pedido
+  var [pmProd, setPmProd]               = useState("");    // nombre del producto seleccionado
+  var [pmCant, setPmCant]               = useState("");    // cantidad
+  var [pmNota, setPmNota]               = useState("");    // nota opcional
+  // Indice del item siendo editado (-1 = ninguno)
+  var [pmEditIdx, setPmEditIdx]         = useState(-1);
+  // Filtro de categoria en el catalogo
+  var [pmCatFilter, setPmCatFilter]     = useState("todas");
 
   // ── Productos: fuente de verdad es la hoja PRODUCTOS de Sheets.
   //    En boot intentamos cache de localStorage (rapido), luego sobreescribimos con Sheets.
@@ -525,21 +477,12 @@ export default function NossaCafe() {
   var [obradorData,  setObradorData]    = useState({ Centro: null, Primavera: null, CF: null });
   var [obradorLoading, setObradorLoading] = useState(false);
 
-  var inputRefs  = useRef({});
-  var freshInput = useRef({});
-
   // ── Boot ────────────────────────────────────────────────────────────────────
   useEffect(function () {
     setHora(horaActual());
     recargar();
     cargarProductos();   // carga productos desde Sheets en background
   }, []);
-
-  useEffect(function () {
-    if (screen !== "categoria") return;
-    var t = setTimeout(function () { var f = document.querySelector(".prod-input"); if (f) f.focus(); }, 150);
-    return function () { clearTimeout(t); };
-  }, [catIdx, screen]);
 
   // ── Estado cierres desde Sheets ─────────────────────────────────────────────
   async function recargar() {
@@ -732,73 +675,55 @@ export default function NossaCafe() {
   }
 
   var categorias = buildCats(selectedPoint);
-  var cat = categorias[catIdx] || categorias[0] || { id: "", icon: "", nombre: "", color: "#7C5C3B", bg: "#FFF8F0", obligatoria: true, productos: [] };
 
-  function getPedir(prod) {
-    var s = stocks[prod.nombre];
-    if (s === undefined) return null;
-    if (s > prod.max) return "OVER";
-    return s <= prod.min ? Math.max(0, prod.max - s) : 0;
-  }
+  // ── Catalogo deduplicado por nombre (para el flujo de pedido manual) ────────
+  // Los productos vienen repetidos por punto. Para el catalogo de la UI
+  // solo necesitamos un entry por nombre (activos).
+  var catalogoDedup = (function () {
+    var seen = {};
+    var out  = [];
+    productosActivos.forEach(function (p) {
+      if (seen[p.producto]) return;
+      seen[p.producto] = true;
+      out.push({ producto: p.producto, categoria: p.categoria });
+    });
+    return out;
+  })();
 
-  function catCompleta(c) {
-    return skipped[c.id] || c.productos.every(function (p) { return stocks[p.nombre] !== undefined; });
-  }
+  // Catalogo agrupado por categoria (para mostrar filtrado en la UI)
+  var catalogoPorCat = {};
+  catalogoDedup.forEach(function (p) {
+    if (!catalogoPorCat[p.categoria]) catalogoPorCat[p.categoria] = [];
+    catalogoPorCat[p.categoria].push(p);
+  });
 
   // ── GUARDAR CIERRE ───────────────────────────────────────────────────────────
   async function handleGuardarCierre() {
     console.log("CLICK GUARDAR CIERRE");
 
-    // 1. Snapshot inmediato de todo antes de cualquier setState
-    var pt        = selectedPoint;
-    var hr        = hora;
-    var resp      = responsable;
-    var stocksNow = Object.assign({}, stocks);
-    var skipNow   = Object.assign({}, skipped);
-    var catsNow   = buildCats(pt);
-    var fecha     = fechaHoy();
+    var pt   = selectedPoint;
+    var hr   = hora;
+    var resp = responsable;
+    var fecha = fechaHoy();
 
-    // 2. Validar punto
     if (!pt) {
       console.error("handleGuardarCierre: selectedPoint es null");
       alert("Error: no hay punto seleccionado. Vuelve al inicio y selecciona Centro, Primavera o CF.");
       return;
     }
-    console.log("Punto validado:", pt);
 
-    // 3. Construir pedido
-    var pedido = catsNow
-      .filter(function (c) { return !skipNow[c.id]; })
-      .flatMap(function (c) {
-        return c.productos
-          .filter(function (p) { var s = stocksNow[p.nombre]; return s !== undefined && s <= p.min; })
-          .map(function (p) { return { cat: c.nombre, prod: p.nombre, cantidad: Math.max(0, p.max - (stocksNow[p.nombre] || 0)) }; });
-      });
-
-    // 4. Construir URL — DATOS OPERATIVOS COMPACTOS
-    //    - h: hora           (string corta)
-    //    - r: responsable    (string)
-    //    - p: pedido         (array de pares [nombre, cantidad] — items con stock <= min)
-    //    - o: observaciones  (vacio en iter1; UI vendra en iter2)
-    //
-    //    La categoria NO se envia: se reconstruye en cliente con productoACat (derivado de productos).
-    //    NO se envian stocks completos ni productos con stock OK.
-    //    Esto deja la URL en orden de magnitud ~1000 chars con 20 items pendientes.
-    var pedidoCompacto = [];
-    catsNow.filter(function (c) { return !skipNow[c.id]; }).forEach(function (c) {
-      c.productos.forEach(function (p) {
-        var s = stocksNow[p.nombre];
-        if (s !== undefined && s <= p.min) {
-          pedidoCompacto.push([p.nombre, Math.max(0, p.max - s)]);
-        }
-      });
+    // Construir datos compactos para URL
+    // pm = pedido manual como tuples: [[producto, categoria, cantidad, nota], ...]
+    // Formato compacto para mantener URL corta (~900 chars con 10 items)
+    var pmCompacto = pedidoManual.map(function (it) {
+      return [it.producto, it.categoria, it.cantidad, it.nota || ""];
     });
 
     var datosOperativos = {
       h: hr,
       r: resp || "",
-      p: pedidoCompacto,
-      o: ""
+      pm: pmCompacto,
+      o: observaciones || ""
     };
 
     var finalUrl = DEFAULT_APPS_SCRIPT_URL
@@ -809,60 +734,56 @@ export default function NossaCafe() {
 
     console.log("URL FINAL GUARDAR:", finalUrl);
     console.log("URL length:", finalUrl.length);
-    console.log("Pedido compacto items:", pedidoCompacto.length);
+    console.log("Pedido manual items:", pmCompacto.length);
     if (finalUrl.length > 1800) {
-      console.warn("URL larga (" + finalUrl.length + " chars). Apps Script puede rechazarla. Items pendientes:", pedidoCompacto.length);
+      console.warn("URL larga (" + finalUrl.length + " chars).");
     }
 
     setSaving(true);
     try {
-      // 5. Disparar GET sin CORS via Image()
       await dispararGetSinCors(finalUrl);
       console.log("dispararGetSinCors completado");
 
-      // 6. Esperar 1500ms para que Sheets procese
       await new Promise(function (r) { setTimeout(r, 1500); });
-
-      // 7. Recargar estado desde Sheets
       var estadoNuevo = await apiEstadoCierres();
       console.log("Estado tras guardar:", estadoNuevo);
 
-      // 7b. Si el punto no salió true, reintento UNA vez tras 1500ms más
       if (!estadoNuevo[pt]) {
-        console.warn("Punto " + pt + " aún no marcado como true. Reintentando estadoCierres...");
+        console.warn("Punto " + pt + " aun no marcado. Reintentando...");
         await new Promise(function (r) { setTimeout(r, 1500); });
         estadoNuevo = await apiEstadoCierres();
-        console.log("Estado tras reintento:", estadoNuevo);
       }
 
       setCierresEstado(estadoNuevo);
 
-      if (estadoNuevo[pt]) {
-        console.log("✓ Cierre confirmado en Sheets para " + pt);
+      // Construir mensaje WhatsApp
+      var fechaDisp = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
+      var msg = "CIERRE - " + pt + "\n" + fechaDisp + "  " + hr + "  " + (resp || "--") + "\n\n";
+      if (pedidoManual.length === 0) {
+        msg += "Sin pedidos.";
       } else {
-        console.warn("⚠ Cierre NO confirmado en Sheets para " + pt + ". Pasando a resumen igual.");
-      }
-
-      // 8. Construir mensaje WhatsApp desde snapshot
-      var fechaDisplay = new Date().toLocaleDateString("es-CO", { day: "2-digit", month: "2-digit", year: "numeric" });
-      var msg = "CIERRE - " + pt + "\n" + fechaDisplay + "  " + hr + "  " + (resp || "--") + "\n\n";
-      if (!pedido.length) {
-        msg += "Sin pedidos pendientes.";
-      } else {
-        msg += "PEDIR:\n\n";
-        catsNow.filter(function (c) { return !skipNow[c.id]; }).forEach(function (c) {
-          var items = c.productos.filter(function (p) { var s = stocksNow[p.nombre]; return s !== undefined && s <= p.min; });
-          if (!items.length) return;
-          msg += c.nombre + ":\n";
-          items.forEach(function (p) { msg += "  - " + p.nombre + ": " + Math.max(0, p.max - (stocksNow[p.nombre] || 0)) + " und\n"; });
+        msg += "PEDIDO PARA OBRADOR:\n\n";
+        var porCat = {};
+        pedidoManual.forEach(function (it) {
+          var catNom = CAT_NOMBRE[it.categoria] || it.categoria;
+          if (!porCat[catNom]) porCat[catNom] = [];
+          porCat[catNom].push(it);
+        });
+        Object.keys(porCat).forEach(function (catNom) {
+          msg += catNom + ":\n";
+          porCat[catNom].forEach(function (it) {
+            msg += "  - " + it.producto + ": " + it.cantidad + " und";
+            if (it.nota) msg += " (" + it.nota + ")";
+            msg += "\n";
+          });
           msg += "\n";
         });
       }
+      if (observaciones) {
+        msg += "OBSERVACIONES:\n" + observaciones + "\n";
+      }
 
-      // 9. Guardar snapshot inmutable para resumen
-      setLastSaved({ punto: pt, hora: hr, responsable: resp, pedido: pedido, mensaje: msg });
-
-      // 10. Ir a resumen
+      setLastSaved({ punto: pt, hora: hr, responsable: resp, pedido: pedidoManual, mensaje: msg });
       setScreen("resumen");
     } catch (e) {
       console.error("handleGuardarCierre error:", e);
@@ -875,12 +796,14 @@ export default function NossaCafe() {
     setSelectedPoint(null);
     setResponsable("");
     setHora(horaActual());
-    setCatIdx(0);
-    setSkipped({});
-    setStocks({});
+    setPedidoManual([]);
+    setObservaciones("");
+    setPmProd("");
+    setPmCant("");
+    setPmNota("");
+    setPmEditIdx(-1);
+    setPmCatFilter("todas");
     setLastSaved(null);
-    freshInput.current = {};
-    inputRefs.current  = {};
     recargar();
     setScreen("inicio");
   }
@@ -1576,64 +1499,205 @@ export default function NossaCafe() {
       );
     }
 
-    var pct  = Math.round((catIdx / categorias.length) * 100);
-    var done = catCompleta(cat);
+    // Productos filtrados por categoria en el dropdown
+    var catsFiltradas = pmCatFilter === "todas" ? catalogoDedup : catalogoDedup.filter(function (p) { return p.categoria === pmCatFilter; });
+
+    // Funcion para agregar o actualizar item en el pedido
+    function agregarAlPedido() {
+      if (!pmProd)                         { alert("Selecciona un producto."); return; }
+      var cant = parseInt(pmCant, 10);
+      if (isNaN(cant) || cant <= 0)        { alert("Ingresa una cantidad valida."); return; }
+      var info = catalogoDedup.find(function (p) { return p.producto === pmProd; });
+      var cat  = info ? info.categoria : (productoACat[pmProd] || "otros");
+      var item = { producto: pmProd, categoria: cat, cantidad: cant, nota: pmNota.trim() };
+
+      if (pmEditIdx >= 0) {
+        // Actualizando item existente
+        setPedidoManual(function (prev) {
+          var u = prev.slice();
+          u[pmEditIdx] = item;
+          return u;
+        });
+        setPmEditIdx(-1);
+      } else {
+        // Verificar si ya existe — sumar o agregar
+        var existeIdx = pedidoManual.findIndex(function (it) { return it.producto === pmProd; });
+        if (existeIdx >= 0) {
+          setPedidoManual(function (prev) {
+            var u = prev.slice();
+            u[existeIdx] = Object.assign({}, u[existeIdx], { cantidad: u[existeIdx].cantidad + cant, nota: pmNota.trim() || u[existeIdx].nota });
+            return u;
+          });
+        } else {
+          setPedidoManual(function (prev) { return prev.concat([item]); });
+        }
+      }
+      setPmProd("");
+      setPmCant("");
+      setPmNota("");
+    }
+
+    function editarItem(idx) {
+      var it = pedidoManual[idx];
+      setPmProd(it.producto);
+      setPmCant(String(it.cantidad));
+      setPmNota(it.nota || "");
+      setPmEditIdx(idx);
+    }
+
+    function eliminarItem(idx) {
+      setPedidoManual(function (prev) { return prev.filter(function (_, i) { return i !== idx; }); });
+      if (pmEditIdx === idx) { setPmEditIdx(-1); setPmProd(""); setPmCant(""); setPmNota(""); }
+    }
 
     return (
       <div style={S.page}>
         <div style={{ ...S.card, padding: 0, overflow: "hidden" }}>
-          <div style={{ padding: "16px 16px 12px", color: "#fff", background: cat.color }}>
+          {/* Header */}
+          <div style={{ padding: "16px 16px 12px", color: "#fff", background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <button style={S.ghost} onClick={function () { catIdx === 0 ? setScreen("inicio") : setCatIdx(catIdx - 1); }}>Atras</button>
+              <button style={S.ghost} onClick={function () { setScreen("inicio"); }}>Atras</button>
               <span style={{ fontSize: 11, background: "rgba(255,255,255,0.22)", padding: "3px 10px", borderRadius: 20 }}>{selectedPoint}</span>
             </div>
-            <div style={{ fontSize: 36, textAlign: "center" }}>{cat.icon}</div>
-            <div style={{ fontSize: 17, fontWeight: "bold", textAlign: "center", margin: "4px 0 2px" }}>{cat.nombre}</div>
-            <div style={{ textAlign: "center", fontSize: 11, opacity: 0.75 }}>{catIdx + 1} / {categorias.length}</div>
-            <div style={{ height: 4, background: "rgba(255,255,255,0.3)", borderRadius: 3, marginTop: 10 }}>
-              <div style={{ height: "100%", background: "#fff", borderRadius: 3, width: pct + "%", transition: "width 0.4s" }} />
+            <div style={{ fontSize: 20, fontWeight: "bold", textAlign: "center", color: "#F5E6D3" }}>Pedido para Obrador</div>
+            <div style={{ textAlign: "center", fontSize: 11, opacity: 0.75, marginTop: 4 }}>{pedidoManual.length} productos en el pedido</div>
+          </div>
+
+          <div style={{ padding: "14px 16px", overflowY: "auto", maxHeight: "65vh" }}>
+
+            {/* Formulario para agregar producto */}
+            <div style={{ background: "#FFF8F4", border: "1.5px solid #E5D8CC", borderRadius: 12, padding: 12, marginBottom: 14 }}>
+              <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#7C5C3B", marginBottom: 8 }}>
+                {pmEditIdx >= 0 ? "Editando item" : "Agregar producto"}
+              </div>
+
+              {/* Filtro de categoria */}
+              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Categoria</div>
+              <select
+                value={pmCatFilter}
+                onChange={function (e) { setPmCatFilter(e.target.value); setPmProd(""); }}
+                style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 12, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}
+              >
+                <option value="todas">Todas las categorias</option>
+                {CATS_ORDER.map(function (id) {
+                  if (!CATS_META[id]) return null;
+                  var count = (catalogoPorCat[id] || []).length;
+                  if (count === 0) return null;
+                  return <option key={id} value={id}>{CATS_META[id].nombre} ({count})</option>;
+                })}
+              </select>
+
+              {/* Selector de producto */}
+              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Producto</div>
+              <select
+                value={pmProd}
+                onChange={function (e) { setPmProd(e.target.value); }}
+                style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 13, marginBottom: 8, fontFamily: "Georgia, serif", background: "#fff" }}
+              >
+                <option value="">-- Seleccionar producto --</option>
+                {catsFiltradas.map(function (p) {
+                  return <option key={p.producto} value={p.producto}>{p.producto}</option>;
+                })}
+              </select>
+
+              {/* Cantidad + Nota */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Cantidad</div>
+                  <input
+                    type="number" inputMode="numeric" min="1" placeholder="0"
+                    value={pmCant}
+                    onChange={function (e) { setPmCant(e.target.value); }}
+                    style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 14, fontFamily: "Georgia, serif", boxSizing: "border-box", textAlign: "center" }}
+                  />
+                </div>
+                <div style={{ flex: 2 }}>
+                  <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Nota (opcional)</div>
+                  <input
+                    type="text" placeholder="Ej: urgente, para vitrina..."
+                    value={pmNota}
+                    onChange={function (e) { setPmNota(e.target.value); }}
+                    style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 12, fontFamily: "Georgia, serif", boxSizing: "border-box" }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={agregarAlPedido}
+                  style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: "#7C5C3B", color: "#fff", fontSize: 13, fontWeight: "bold", cursor: "pointer", fontFamily: "Georgia, serif" }}
+                >{pmEditIdx >= 0 ? "Actualizar" : "Agregar"}</button>
+                {pmEditIdx >= 0 && (
+                  <button
+                    onClick={function () { setPmEditIdx(-1); setPmProd(""); setPmCant(""); setPmNota(""); }}
+                    style={{ padding: "10px 14px", borderRadius: 8, border: "1.5px solid #CBD5E0", background: "#fff", color: "#4A5568", fontSize: 13, cursor: "pointer", fontFamily: "Georgia, serif" }}
+                  >Cancelar</button>
+                )}
+              </div>
+            </div>
+
+            {/* Lista del pedido actual */}
+            {pedidoManual.length > 0 && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1, color: "#5C4DB1", marginBottom: 6 }}>
+                  Pedido actual ({pedidoManual.length})
+                </div>
+                <div style={{ background: "#FAFAFA", borderRadius: 12, border: "1px solid #F1F5F9", overflow: "hidden" }}>
+                  {pedidoManual.map(function (it, i) {
+                    var catNom = CAT_NOMBRE[it.categoria] || it.categoria;
+                    return (
+                      <div key={i} style={{ padding: "10px 12px", borderBottom: i < pedidoManual.length - 1 ? "1px solid #F1F5F9" : "none", display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 13, fontWeight: "600", color: "#2D3748" }}>{it.producto}</div>
+                          <div style={{ fontSize: 10, color: "#9CA3AF" }}>
+                            {catNom}
+                            {it.nota ? " - " + it.nota : ""}
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 14, fontWeight: "bold", color: "#7C5C3B", minWidth: 50, textAlign: "right" }}>{it.cantidad} und</span>
+                        <button
+                          onClick={function () { editarItem(i); }}
+                          style={{ background: "#EDF2F7", border: "none", padding: "6px 8px", borderRadius: 6, cursor: "pointer", fontSize: 11 }}
+                        >Ed</button>
+                        <button
+                          onClick={function () { eliminarItem(i); }}
+                          style={{ background: "#FEE2E2", border: "none", padding: "6px 8px", borderRadius: 6, cursor: "pointer", fontSize: 11, color: "#991B1B" }}
+                        >X</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {pedidoManual.length === 0 && (
+              <div style={{ padding: 16, background: "#FAFAFA", borderRadius: 12, textAlign: "center", color: "#9CA3AF", fontSize: 13, fontStyle: "italic", marginBottom: 14 }}>
+                Agrega productos al pedido usando el formulario de arriba.
+              </div>
+            )}
+
+            {/* Observaciones */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 11, color: "#6B7280", marginBottom: 4 }}>Observaciones generales (opcional)</div>
+              <textarea
+                placeholder="Ej: mañana hay evento, pedir doble de empanadas..."
+                value={observaciones}
+                onChange={function (e) { setObservaciones(e.target.value); }}
+                rows={2}
+                style={{ width: "100%", padding: "8px", borderRadius: 8, border: "1.5px solid #CBD5E0", fontSize: 12, fontFamily: "Georgia, serif", boxSizing: "border-box", resize: "vertical" }}
+              />
             </div>
           </div>
 
-          {!cat.obligatoria && !skipped[cat.id] && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 16px", borderBottom: "1px solid #E5E7EB", gap: 8, background: cat.bg }}>
-              <span style={{ color: cat.color, fontSize: 13 }}>Revisaste esta categoria hoy?</span>
-              <button style={{ fontSize: 12, padding: "7px 12px", borderRadius: 20, border: "1.5px solid " + cat.color, background: "transparent", cursor: "pointer", color: cat.color }} onClick={function () {
-                var ns = Object.assign({}, skipped); ns[cat.id] = true; setSkipped(ns);
-                if (catIdx < categorias.length - 1) setCatIdx(catIdx + 1); else handleGuardarCierre();
-              }}>Omitir</button>
-            </div>
-          )}
-
-          {skipped[cat.id] && (
-            <div style={{ background: "#F3F4F6", padding: "10px 16px", fontSize: 13, color: "#6B7280", borderBottom: "1px solid #E5E7EB" }}>
-              Omitida - <button style={{ background: "none", border: "none", color: "#3B82F6", cursor: "pointer", fontSize: 13, textDecoration: "underline" }} onClick={function () { var ns = Object.assign({}, skipped); ns[cat.id] = false; setSkipped(ns); }}>Deshacer</button>
-            </div>
-          )}
-
-          {!skipped[cat.id] && (
-            <div>
-              <div style={{ padding: "9px 16px", fontSize: 13, fontStyle: "italic", borderBottom: "1px solid #E5E7EB", color: cat.color }}>Cuantas unidades quedan ahora mismo?</div>
-              <div style={{ overflowY: "auto", maxHeight: "44vh" }}>
-                {cat.productos.map(function (prod, idx) {
-                  return <ProductRow key={prod.nombre} prod={prod} idx={idx} allProds={cat.productos} stocks={stocks} setStocks={setStocks} inputRefs={inputRefs} freshInput={freshInput} />;
-                })}
-              </div>
-            </div>
-          )}
-
+          {/* Footer: Guardar */}
           <div style={{ padding: 14, borderTop: "1px solid #F0F0F0", background: "#FAFAFA" }}>
-            {!done && !skipped[cat.id] && <div style={{ textAlign: "center", color: "#D97706", fontSize: 11, marginBottom: 8, fontStyle: "italic" }}>Completa todos los productos para continuar</div>}
             {saving && <div style={{ textAlign: "center", color: "#6B7280", fontSize: 12, marginBottom: 8 }}>Guardando en Sheets...</div>}
             <button
-              style={{ ...S.btn, marginTop: 0, opacity: done && !saving ? 1 : 0.35 }}
-              disabled={!done || saving}
-              onClick={function () {
-                if (catIdx < categorias.length - 1) setCatIdx(catIdx + 1);
-                else handleGuardarCierre();
-              }}
+              style={{ ...S.btn, marginTop: 0, opacity: !saving ? 1 : 0.35 }}
+              disabled={saving}
+              onClick={handleGuardarCierre}
             >
-              {saving ? "Guardando..." : catIdx < categorias.length - 1 ? "Siguiente: " + (categorias[catIdx + 1] ? categorias[catIdx + 1].nombre : "") : "Guardar cierre"}
+              {saving ? "Guardando..." : "Guardar cierre"}
             </button>
           </div>
         </div>
@@ -1658,7 +1722,7 @@ export default function NossaCafe() {
         <div style={S.card}>
           <div style={{ background: "linear-gradient(160deg,#3D2B1F,#7C5C3B)", padding: "32px 24px 20px", textAlign: "center", color: "#fff" }}>
             <div style={{ fontSize: 48 }}>{confirmado ? "✓" : "!"}</div>
-            <div style={{ fontSize: 22, fontWeight: "bold", color: "#F5E6D3" }}>{pedRes.length === 0 ? "Todo en orden!" : pedRes.length + " productos por pedir"}</div>
+            <div style={{ fontSize: 22, fontWeight: "bold", color: "#F5E6D3" }}>{pedRes.length === 0 ? "Cierre sin pedidos" : pedRes.length + " productos pedidos"}</div>
             <div style={{ fontSize: 13, color: "#C8A882", marginTop: 4 }}>{ptRes} - {hrRes} - {respRes || "--"}</div>
             {confirmado
               ? <div style={{ color: "#C6F6D5", fontSize: 12, marginTop: 8 }}>Confirmado en Google Sheets</div>
@@ -1668,11 +1732,19 @@ export default function NossaCafe() {
             {pedRes.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 {pedRes.map(function (item, i) {
-                  return <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #F0F0F0" }}><span style={{ fontSize: 13, color: "#2D3748" }}>{item.prod}</span><span style={{ fontSize: 13, fontWeight: "bold", color: "#E53E3E" }}>{item.cantidad} und</span></div>;
+                  return (
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #F0F0F0", alignItems: "center" }}>
+                      <div>
+                        <span style={{ fontSize: 13, color: "#2D3748" }}>{item.producto}</span>
+                        {item.nota && <span style={{ fontSize: 10, color: "#9CA3AF", marginLeft: 6 }}>({item.nota})</span>}
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: "bold", color: "#7C5C3B" }}>{item.cantidad} und</span>
+                    </div>
+                  );
                 })}
               </div>
             )}
-            {pedRes.length === 0 && <div style={{ padding: 14, background: "#F0FFF4", borderRadius: 12, textAlign: "center", color: "#38A169", fontSize: 14, marginBottom: 16 }}>Todos los productos sobre el nivel minimo</div>}
+            {pedRes.length === 0 && <div style={{ padding: 14, background: "#F0FFF4", borderRadius: 12, textAlign: "center", color: "#38A169", fontSize: 14, marginBottom: 16 }}>Cierre registrado sin pedidos</div>}
             <div style={{ padding: 14, background: "#F0FFF4", borderRadius: 14, border: "2px solid #C6F6D5", marginBottom: 16 }}>
               <div style={{ fontWeight: "bold", fontSize: 13, color: "#276749", marginBottom: 8 }}>Mensaje para WhatsApp</div>
               <textarea style={{ width: "100%", borderRadius: 8, border: "1px solid #C6F6D5", padding: 10, fontSize: 11, background: "#fff", resize: "none", fontFamily: "monospace", boxSizing: "border-box", lineHeight: 1.6 }} readOnly value={msgRes} rows={Math.min(14, msgRes.split("\n").length + 2)} />
@@ -1772,15 +1844,17 @@ export default function NossaCafe() {
                 onClick={function () {
                   if (!selectedPoint) { alert("Selecciona Centro, Primavera o CF primero."); return; }
                   setHora(horaActual());
-                  setCatIdx(0);
-                  setSkipped({});
-                  setStocks({});
-                  freshInput.current = {};
-                  inputRefs.current  = {};
+                  setPedidoManual([]);
+                  setObservaciones("");
+                  setPmProd("");
+                  setPmCant("");
+                  setPmNota("");
+                  setPmEditIdx(-1);
+                  setPmCatFilter("todas");
                   setScreen("categoria");
                 }}
               >
-                Iniciar revision
+                Iniciar pedido
               </button>
             </div>
           )}
@@ -1791,4 +1865,3 @@ export default function NossaCafe() {
     </div>
   );
 }
-
